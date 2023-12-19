@@ -53,7 +53,7 @@ CMR_ERROR testComplementTotalUnimodularity(
     CMR_CALL( CMRchrmatCreateFromSparseStream(cmr, inputMatrixFile, &matrix) );
   if (inputMatrixFile != stdin)
     fclose(inputMatrixFile);
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros, (clock() - readClock) * 1.0 / CLOCKS_PER_SEC);
 
   /* Actual test. */
@@ -63,7 +63,8 @@ CMR_ERROR testComplementTotalUnimodularity(
   size_t complementColumn = SIZE_MAX;
   CMR_CTU_STATISTICS stats;
   CMR_CALL( CMRstatsComplementTotalUnimodularityInit(&stats) );
-  CMR_CALL( CMRtestComplementTotalUnimodularity(cmr, matrix, &isCTU, &complementRow, &complementColumn, &stats) );
+  CMR_CALL( CMRtestComplementTotalUnimodularity(cmr, matrix, &isCTU, &complementRow, &complementColumn, &stats,
+    timeLimit) );
 
   fprintf(stderr, "Matrix %scomplement totally unimodular.\n", isCTU ? "IS " : "IS NOT ");
   if (printStats)
@@ -79,9 +80,9 @@ CMR_ERROR testComplementTotalUnimodularity(
         outputOperationsToFile ? outputOperationsFileName : "stdout", outputOperationsToFile ? ">" : "");
 
       if (complementRow < SIZE_MAX)
-        fprintf(outputOperationsFile, "Complement row %lu\n", complementRow + 1);
+        fprintf(outputOperationsFile, "Complement row %zu\n", complementRow + 1);
       if (complementColumn < SIZE_MAX)
-        fprintf(outputOperationsFile, "Complement column %lu\n", complementColumn + 1);
+        fprintf(outputOperationsFile, "Complement column %zu\n", complementColumn + 1);
 
       if (outputOperationsFile)
         fclose(outputOperationsFile);
@@ -128,11 +129,9 @@ CMR_ERROR complementMatrix(
   FileFormat outputFormat,          /**< Format of the output submatrix. */
   size_t complementRow,             /**< Complement row. */
   size_t complementColumn,          /**< Complement column. */
-  char* outputMatrixFileName,       /**< File name for the matrix; may be `-' for stdout. */
-  bool printStats                   /**< Whether to print statistics to stderr. */
+  char* outputMatrixFileName        /**< File name for the matrix; may be `-' for stdout. */
 )
 {
-  clock_t startClock, endTime;
   FILE* inputMatrixFile = strcmp(inputMatrixFileName, "-") ? fopen(inputMatrixFileName, "r") : stdin;
   if (!inputMatrixFile)
     return CMR_ERROR_INPUT;
@@ -142,7 +141,6 @@ CMR_ERROR complementMatrix(
 
   /* Read matrix. */
 
-  startClock = clock();
   CMR_CHRMAT* matrix = NULL;
   if (inputFormat == FILEFORMAT_MATRIX_DENSE)
     CMR_CALL( CMRchrmatCreateFromDenseStream(cmr, inputMatrixFile, &matrix) );
@@ -150,7 +148,7 @@ CMR_ERROR complementMatrix(
     CMR_CALL( CMRchrmatCreateFromSparseStream(cmr, inputMatrixFile, &matrix) );
   if (inputMatrixFile != stdin)
     fclose(inputMatrixFile);
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros);
 
   /* Carry out complementing. */
@@ -340,7 +338,7 @@ int main(int argc, char** argv)
   {
     assert(task == TASK_APPLY);
     error = complementMatrix(inputMatrixFileName, inputFormat, outputFormat, complementRow, complementColumn,
-      outputMatrixFileName, printStats);
+      outputMatrixFileName);
   }
 
   switch (error)

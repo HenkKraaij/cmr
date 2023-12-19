@@ -46,7 +46,7 @@ CMR_ERROR recognizeSeriesParallel(
     return CMR_ERROR_INPUT;
   }
 
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros, (clock() - readClock) * 1.0 / CLOCKS_PER_SEC);
 
   /* Run the search. */
@@ -68,7 +68,7 @@ CMR_ERROR recognizeSeriesParallel(
       outputReducedFileName ? &reducedSubmatrix : NULL, outputSubmatrixFileName ? &violatorSubmatrix : NULL, &stats,
       timeLimit) );
 
-  fprintf(stderr, "Matrix %sseries-parallel. %ld reductions can be applied.\n",
+  fprintf(stderr, "Matrix %sseries-parallel. %zu reductions can be applied.\n",
     numReductions == matrix->numRows + matrix->numColumns ? "IS " : "is NOT ", numReductions);
   if (printStats)
     CMR_CALL( CMRstatsSeriesParallelPrint(stderr, &stats, NULL) );
@@ -77,11 +77,11 @@ CMR_ERROR recognizeSeriesParallel(
   {
     bool outputReductionsToFile = strcmp(outputReductionsFileName, "-");
     FILE* outputReductionsFile = outputReductionsToFile ? fopen(outputReductionsFileName, "w") : stdout;
-    fprintf(stderr, "Writing %ld series-parallel reductions to %s%s%s.\n", numReductions,
+    fprintf(stderr, "Writing %zu series-parallel reductions to %s%s%s.\n", numReductions,
       outputReductionsToFile ? "file <" : "", outputReductionsToFile ? outputReductionsFileName : "stdout",
       outputReductionsToFile ? ">" : "");    
 
-    fprintf(outputReductionsFile, "%ld\n", numReductions);
+    fprintf(outputReductionsFile, "%zu\n", numReductions);
     for (size_t i = 0; i < numReductions; ++i)
       fprintf(outputReductionsFile, "%s\n", CMRspReductionString(reductions[i], NULL));
 
@@ -101,7 +101,7 @@ CMR_ERROR recognizeSeriesParallel(
   if (violatorSubmatrix && outputSubmatrixFileName)
   {
     bool outputSubmatrixToFile = strcmp(outputSubmatrixFileName, "-");
-    fprintf(stderr, "Writing minimal non-series-parallel submatrix of order %lu to %s%s%s.\n",
+    fprintf(stderr, "Writing minimal non-series-parallel submatrix of order %zu to %s%s%s.\n",
       violatorSubmatrix->numRows, outputSubmatrixToFile ? "file <" : "",
       outputSubmatrixToFile ? outputSubmatrixFileName : "stdout", outputSubmatrixToFile ? ">" : "");    
 

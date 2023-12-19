@@ -16,7 +16,7 @@ typedef struct
   size_t numNonzeros;               /**< \brief Number of nonzeros in (part parallel to) processed submatrix. */
   CMR_ELEMENT representative;       /**< \brief Parallel element. */
   CMR_ELEMENT predecessor;          /**< \brief Predecessor row/column in BFS. */
-  CMR_ELEMENT givenElement;             /**< \brief Element of original dense matrix that this row/column represents. */
+  CMR_ELEMENT givenElement;         /**< \brief Element of original dense matrix that this row/column represents. */
   bool isProcessed : 1;             /**< \brief Whether this row/column belongs to processed submatrix. */
   bool isSource : 1;                /**< \brief Whether this row/column is a source node in the BFS. */
   bool isTarget : 1;                /**< \brief Whether this row/column is a target node in the BFS. */
@@ -111,6 +111,8 @@ CMR_ERROR updateRepresentative(
   bool isRow                          /**< Whether major means rows. */
 )
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(dense);
   assert(majorData);
@@ -154,7 +156,6 @@ CMR_ERROR updateRepresentative(
 static
 CMR_ERROR updateHashtable(
   CMR* cmr,                         /**< \ref CMR environment. */
-  DenseBinaryMatrix* dense,         /**< Matrix. */
   ElementData* majorData,           /**< Major index data. */
   size_t* processedMajors,          /**< Array of processed major indices. */
   size_t numProcessedMajors,        /**< Number of processed major indices. */
@@ -162,7 +163,6 @@ CMR_ERROR updateHashtable(
 )
 {
   assert(cmr);
-  assert(dense);
   assert(majorData);
   assert(processedMajors);
   assert(majorHashtable);
@@ -192,6 +192,8 @@ CMR_ERROR prepareSearch(
   CMR_ELEMENT* pstartElement  /**< Pointer for storing an element for starting the search. */
 )
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(matrix);
   assert(rowData);
@@ -613,7 +615,6 @@ CMR_ERROR extendNestedMinorSequence(
   size_t* nestedMinorsRows,       /**< Mapping of rows of the nested minor sequence to rows of \p dense. */
   size_t* nestedMinorsColumns,    /**< Mapping of columns of the nested minor sequence to columns of \p dense. */
   CMR_SUBMAT** psubmatrix,        /**< Pointer for storing a violator matrix. */
-  CMR_REGULAR_PARAMETERS* params, /**< Parameters for the computation. */
   CMR_REGULAR_STATISTICS* stats,  /**< Statistics for the computation (may be \c NULL). */
   double timeLimit                /**< Time limit to impose. */
 )
@@ -623,7 +624,6 @@ CMR_ERROR extendNestedMinorSequence(
 
   assert(cmr);
   assert(dec);
-  assert(params);
   assert(dec->nestedMinorsLength >= 1);
   assert(dec->nestedMinorsSequenceNumRows[dec->nestedMinorsLength - 1] <= dense->numRows);
   assert(dec->nestedMinorsSequenceNumColumns[dec->nestedMinorsLength - 1] <= dense->numColumns);
@@ -771,8 +771,8 @@ CMR_ERROR extendNestedMinorSequence(
           dec->nestedMinorsLength++;
           CMR_CALL( addElement(cmr, dec, dense, rowData, columnData, columnHashtable, hashVector, numColumns, processedRows,
             &numProcessedRows, row, nestedMinorsRows, true) );
-          CMR_CALL( updateHashtable(cmr, dense, rowData, processedRows, numProcessedRows, rowHashtable) );
-          CMR_CALL( updateHashtable(cmr, dense, columnData, processedColumns, numProcessedColumns, columnHashtable) );
+          CMR_CALL( updateHashtable(cmr, rowData, processedRows, numProcessedRows, rowHashtable) );
+          CMR_CALL( updateHashtable(cmr, columnData, processedColumns, numProcessedColumns, columnHashtable) );
           added = true;
           break;
         }
@@ -802,8 +802,8 @@ CMR_ERROR extendNestedMinorSequence(
           dec->nestedMinorsLength++;
           CMR_CALL( addElement(cmr, dec, dense, columnData, rowData, rowHashtable, hashVector, numRows, processedColumns,
             &numProcessedColumns, column, nestedMinorsColumns, false) );
-          CMR_CALL( updateHashtable(cmr, dense, rowData, processedRows, numProcessedRows, rowHashtable) );
-          CMR_CALL( updateHashtable(cmr, dense, columnData, processedColumns, numProcessedColumns, columnHashtable) );
+          CMR_CALL( updateHashtable(cmr, rowData, processedRows, numProcessedRows, rowHashtable) );
+          CMR_CALL( updateHashtable(cmr, columnData, processedColumns, numProcessedColumns, columnHashtable) );
           added = true;
           break;
         }
@@ -873,8 +873,8 @@ CMR_ERROR extendNestedMinorSequence(
         }
       }
 
-      CMR_CALL( updateHashtable(cmr, dense, rowData, processedRows, numProcessedRows, rowHashtable) );
-      CMR_CALL( updateHashtable(cmr, dense, columnData, processedColumns, numProcessedColumns, columnHashtable) );
+      CMR_CALL( updateHashtable(cmr, rowData, processedRows, numProcessedRows, rowHashtable) );
+      CMR_CALL( updateHashtable(cmr, columnData, processedColumns, numProcessedColumns, columnHashtable) );
     }
     else
     {
@@ -1135,12 +1135,11 @@ CMR_ERROR extendNestedMinorSequence(
 }
 
 CMR_ERROR CMRregularConstructNestedMinorSequence(CMR* cmr, CMR_DEC* dec, bool ternary, CMR_SUBMAT* wheelSubmatrix,
-  CMR_SUBMAT** psubmatrix, CMR_REGULAR_PARAMETERS* params, CMR_REGULAR_STATISTICS* stats, double timeLimit)
+  CMR_SUBMAT** psubmatrix, CMR_REGULAR_STATISTICS* stats, double timeLimit)
 {
   assert(cmr);
   assert(dec);
   assert(wheelSubmatrix);
-  assert(params);
 
   clock_t time = clock();
   size_t numRows = dec->matrix->numRows;
@@ -1179,7 +1178,7 @@ CMR_ERROR CMRregularConstructNestedMinorSequence(CMR* cmr, CMR_DEC* dec, bool te
 
   double remainingTime = timeLimit - (clock() - time) * 1.0 / CLOCKS_PER_SEC;
   CMR_CALL( extendNestedMinorSequence(cmr, dec, ternary, dense, nestedMinorsRows, nestedMinorsColumns, psubmatrix,
-    params, stats, remainingTime) );
+    stats, remainingTime) );
 
   CMR_CALL( CMRdensebinmatrixFreeStack(cmr, &dense) );
 
@@ -1196,11 +1195,10 @@ CMR_ERROR CMRregularConstructNestedMinorSequence(CMR* cmr, CMR_DEC* dec, bool te
 }
 
 CMR_ERROR CMRregularExtendNestedMinorSequence(CMR* cmr, CMR_DEC* dec, bool ternary, CMR_SUBMAT** psubmatrix,
-  CMR_REGULAR_PARAMETERS* params, CMR_REGULAR_STATISTICS* stats, double timeLimit)
+  CMR_REGULAR_STATISTICS* stats, double timeLimit)
 {
   assert(cmr);
   assert(dec);
-  assert(params);
 
   CMRdbgMsg(4, "Preparing to extend an incomplete sequence of 3-connected nested minors.\n");
 
@@ -1233,7 +1231,7 @@ CMR_ERROR CMRregularExtendNestedMinorSequence(CMR* cmr, CMR_DEC* dec, bool terna
     }
 
     CMR_CALL( extendNestedMinorSequence(cmr, dec, ternary, dense, nestedMinorsRows, nestedMinorsColumns, psubmatrix,
-      params, stats, timeLimit) );
+      stats, timeLimit) );
 
     CMR_CALL( CMRdensebinmatrixFreeStack(cmr, &dense) );
 

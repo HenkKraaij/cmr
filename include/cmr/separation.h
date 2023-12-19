@@ -157,7 +157,17 @@ CMR_ERROR CMRsepaCheckTernary(
 );
 
 /**
- * \brief Constructs the 1-sum of \p first and \p second matrix.
+ * \brief Constructs the 1-sum of the two matrices \p first and \p second.
+ *
+ * Let \f$ A \f$ and \f$ B \f$ denote the matrices given by \p first and \p second.
+ * Their 2-sum is the matrix
+ * \f[
+ *   C := \begin{pmatrix}
+ *     A & \mathbb{O} \\
+ *     \mathbb{O} & B
+ *   \end{pmatrix}.
+ * \f]
+ * The resulting matrix \f$ C \f$ is created and stored in \p *presult.
  */
 
 CMR_EXPORT
@@ -169,7 +179,29 @@ CMR_ERROR CMRoneSum(
 );
 
 /**
- * \brief Constructs the 2-sum of \p first and \p second matrix via \p firstMarker and \p secondMarker.
+ * \brief Constructs the 2-sum of the two matrices \p first and \p second via \p firstMarker and \p secondMarker.
+ *
+ * Let \f$ A \f$ and \f$ B \f$ denote the matrices given by \p first and \p second and let \f$ A' \f$ and \f$ B' \f$ be
+ * these matrices without the row or column indexed by \p firstMarker and \p secondMarker, respectively.
+ * If \p firstMarker indexes a row vector \f$ a^{\textsf{T}} \f$ of \f$ A \f$ then \p secondMarker must index a column
+ * vector \f$ b \f$ of \f$ B \f$. In this case the 2-sum is the matrix
+ * \f[
+ *   C := \begin{pmatrix}
+ *     A' & \mathbb{O} \\
+ *     b a^{\textsf{T}} & B'
+ *   \end{pmatrix}.
+ * \f]
+ * Otherwise, \p firstMarker must index a column vector \f$ a \f$ of \f$ A \f$ and \p secondMarker must index a row
+ * vector \f$ b^{\textsf{T}} \f$ of \f$ B \f$, and the 2-sum is the matrix
+ * \f[
+ *   C := \begin{pmatrix}
+ *     A' & a b^{\textsf{T}} \\
+ *     \mathbb{O} & B'
+ *   \end{pmatrix}.
+ * \f]
+ * The calculations are done modulo \p characteristic, where the value \f$ 3 \f$ yields numbers from \f$ \{-1,0,+1\} \f$.
+ *
+ * The resulting matrix \f$ C \f$ is created and stored in \p *presult.
  */
 
 CMR_EXPORT
@@ -179,12 +211,50 @@ CMR_ERROR CMRtwoSum(
   CMR_CHRMAT* second,         /**< Second matrix. */
   CMR_ELEMENT firstMarker,    /**< Marker element of first matrix. */
   CMR_ELEMENT secondMarker,   /**< Marker element of second matrix. */
+  int8_t characteristic,      /**< Field characteristic. */
   CMR_CHRMAT** presult        /**< Pointer for storing the result. */
 );
 
 /**
- * \brief Constructs the 3-sum of \p first and \p second matrix via \p firstMarker1, \p firstMarker2, \p secondMarker1
- * and \p secondMarker2.
+ * \brief Constructs the 3-sum of the two matrices \p first and \p second via \p firstMarker1, \p firstMarker2,
+ *        \p secondMarker1 and \p secondMarker2.
+ *
+ * Let \f$ A \f$ and \f$ B \f$ denote the matrices given by \p first and \p second, let \f$ A' \f$ be the matrix
+ * \f$ A \f$ without the rows or columns indexed by \p firstMarker1 and \p firstMarker2, and let \f$ B' \f$ be the
+ * matrix \f$ B \f$ without the rows or columns indexed by \p secondMarker1 and \p secondMarker2.
+ * If \p firstMarker1 and \p firstMarker2 both index row vectors \f$ a_1^{\textsf{T}}, a_2^{\textsf{T}} \f$ of \f$ A \f$
+ * then \p secondMarker1 and \p secondMarker2 must index column vectors \f$ b_1, b_2 \f$ of
+ * \f$ B \f$. In this case the 3-sum is the matrix
+ * \f[
+ *   C := \begin{pmatrix}
+ *     A' & \mathbb{O} \\
+ *     b_1 a_1^{\textsf{T}} + b_2 a_2^{\textsf{T}} & B'
+ *   \end{pmatrix}.
+ * \f]
+ * Otherwise, if \p firstMarker1 and \p firstMarker2 both index column vectors \f$ a_1, a_2 \f$ of \f$ A \f$ then
+ * \p secondMarker1 and \p secondMarker2 must index row vectors \f$ b_1^{\textsf{T}}, b_2^{\textsf{T}} \f$ of \f$ B \f$.
+ * In this case the 3-sum is the matrix
+ * \f[
+ *   C := \begin{pmatrix}
+ *     A'         & a_1 b_1^{\textsf{T}} + a_2 b_2^{\textsf{T}}  \\
+ *     \mathbb{O} & B'
+ *   \end{pmatrix}.
+ * \f]
+ * Otherwise, if \p firstMarker1 indexes a row vector \f$ a_1^{\textsf{T}} \f$ and \p firstMarker2 indexes a column
+ * vector \f$ a_2 \f$ of \f$ A \f$ then \p secondMarker1 must index a column vector \f$ b_1 \f$ of \f$ B \f$ and
+ * \p secondMarker2 must index a row vector \f$ b_2^{\textsf{T}} \f$ of \f$ B \f$.
+ * In this case the 3-sum is the matrix
+ * \f[
+ *   C := \begin{pmatrix}
+ *     A'                   & a_2 b_2^{\textsf{T}}  \\
+ *     b_1 a_1^{\textsf{T}} & B'
+ *   \end{pmatrix}.
+ * \f]
+ * The remaining case is identical to the previous one, except that \p firstMarker1 and \p firstMarker2 as well as
+ * \p secondMarker1 and \p secondMarker2 change roles.
+ * The calculations are done modulo \p characteristic, where the value \f$ 3 \f$ yields numbers from \f$ \{-1,0,+1\} \f$.
+ *
+ * The resulting matrix \f$ C \f$ is created and stored in \p *presult.
  */
 
 CMR_EXPORT
@@ -196,6 +266,7 @@ CMR_ERROR CMRthreeSum(
   CMR_ELEMENT secondMarker1,  /**< Second marker element of first matrix. */
   CMR_ELEMENT firstMarker2,   /**< First marker element of second matrix. */
   CMR_ELEMENT secondMarker2,  /**< Second marker element of second matrix. */
+  int8_t characteristic,      /**< Field characteristic. */
   CMR_CHRMAT** presult        /**< Pointer for storing the result. */
 );
 

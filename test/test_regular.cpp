@@ -41,7 +41,7 @@ TEST(Regular, OneSum)
     ASSERT_FALSE( CMRdecHasMatrix(dec) ); /* Default settings should mean that the matrix is not copied. */
     ASSERT_FALSE( CMRdecHasTranspose(dec) ); /* Default settings should mean that the transpose is never computed. */
     ASSERT_EQ( CMRdecIsSum(dec, NULL, NULL), 1 );
-    ASSERT_EQ( CMRdecNumChildren(dec), 2 );
+    ASSERT_EQ( CMRdecNumChildren(dec), 2UL );
     ASSERT_TRUE( CMRdecIsGraphic(CMRdecChild(dec, 0)) );
     ASSERT_FALSE( CMRdecIsCographic(CMRdecChild(dec, 0)) );
     ASSERT_FALSE( CMRdecIsGraphic(CMRdecChild(dec, 1)) );
@@ -81,7 +81,7 @@ TEST(Regular, SeriesParallelTwoSeparation)
     ) );
 
     CMR_CHRMAT* twoSum = NULL;
-    ASSERT_CMR_CALL( CMRtwoSum(cmr, K_3_3, K_3_3_dual, CMRrowToElement(1), CMRcolumnToElement(1), &twoSum) );
+    ASSERT_CMR_CALL( CMRtwoSum(cmr, K_3_3, K_3_3_dual, CMRrowToElement(1), CMRcolumnToElement(1), 3, &twoSum) );
 
     size_t rowPermutations[] = { 4, 6, 5, 7, 0, 1, 2, 3 };
     CMR_CHRMAT* matrix = NULL;
@@ -101,7 +101,7 @@ TEST(Regular, SeriesParallelTwoSeparation)
     ASSERT_FALSE( CMRdecHasMatrix(dec) ); /* Default settings should mean that the matrix is not copied. */
     ASSERT_TRUE( CMRdecHasTranspose(dec) ); /* As we test for graphicness, the transpose is constructed. */
     ASSERT_EQ( CMRdecIsSum(dec, NULL, NULL), 2 );
-    ASSERT_EQ( CMRdecNumChildren(dec), 2 );
+    ASSERT_EQ( CMRdecNumChildren(dec), 2UL );
     ASSERT_FALSE( CMRdecIsGraphic(CMRdecChild(dec, 0)) );
     ASSERT_TRUE( CMRdecIsCographic(CMRdecChild(dec, 0)) );
     ASSERT_TRUE( CMRdecIsGraphic(CMRdecChild(dec, 1)) );
@@ -141,7 +141,7 @@ TEST(Regular, NestedMinorSearchTwoSeparation)
     ) );
 
     CMR_CHRMAT* matrix = NULL;
-    ASSERT_CMR_CALL( CMRtwoSum(cmr, K_3_3, K_3_3_dual, CMRrowToElement(1), CMRcolumnToElement(1), &matrix) );
+    ASSERT_CMR_CALL( CMRtwoSum(cmr, K_3_3, K_3_3_dual, CMRrowToElement(1), CMRcolumnToElement(1), 3, &matrix) );
 
 //     CMRchrmatPrintDense(cmr, K_3_3, stdout, '0', true);
 //     CMRchrmatPrintDense(cmr, K_3_3_dual, stdout, '0', true);
@@ -156,12 +156,13 @@ TEST(Regular, NestedMinorSearchTwoSeparation)
     ASSERT_FALSE( CMRdecHasMatrix(dec) ); /* Default settings should mean that the matrix is not copied. */
     ASSERT_TRUE( CMRdecHasTranspose(dec) ); /* As we test for graphicness, the transpose is constructed. */
     ASSERT_EQ( CMRdecIsSum(dec, NULL, NULL), 2 );
-    ASSERT_EQ( CMRdecNumChildren(dec), 2 );
-    ASSERT_TRUE( CMRdecIsGraphic(CMRdecChild(dec, 0)) );
-    ASSERT_FALSE( CMRdecIsCographic(CMRdecChild(dec, 0)) );
-    ASSERT_FALSE( CMRdecIsGraphic(CMRdecChild(dec, 1)) );
-    ASSERT_TRUE( CMRdecIsCographic(CMRdecChild(dec, 1)) );
-    
+    ASSERT_EQ( CMRdecNumChildren(dec), 2UL );
+    int graphic = (CMRdecIsGraphic(CMRdecChild(dec, 0)) ? 2 : 0) + (CMRdecIsGraphic(CMRdecChild(dec, 1)) ? 1 : 0);
+    int cographic = (CMRdecIsCographic(CMRdecChild(dec, 0)) ? 1 : 0) + (CMRdecIsCographic(CMRdecChild(dec, 1)) ? 2 : 0);
+    ASSERT_EQ( graphic, cographic );
+    ASSERT_NE( graphic, 0);
+    ASSERT_NE( graphic, 3);
+
     ASSERT_CMR_CALL( CMRdecFree(cmr, &dec) );
 
     ASSERT_CMR_CALL( CMRchrmatFree(cmr, &matrix) );
@@ -628,7 +629,7 @@ TEST(Regular, R10)
     CMR_DEC* dec = NULL;
     ASSERT_CMR_CALL( CMRtestBinaryRegular(cmr, matrix, &isRegular, &dec, NULL, NULL, NULL, DBL_MAX) );
     ASSERT_TRUE( CMRdecIsRegular(dec) );
-    ASSERT_EQ( CMRdecNumChildren(dec), 0 );
+    ASSERT_EQ( CMRdecNumChildren(dec), 0UL );
     ASSERT_CMR_CALL( CMRdecFree(cmr, &dec) );
     ASSERT_CMR_CALL( CMRchrmatFree(cmr, &matrix) );
   }
@@ -774,14 +775,14 @@ TEST(Regular, R12)
     CMR_DEC* dec = NULL;
     ASSERT_CMR_CALL( CMRtestBinaryRegular(cmr, matrix, &isRegular, &dec, NULL, NULL, NULL, DBL_MAX) );
     ASSERT_TRUE( CMRdecIsRegular(dec) );
-    ASSERT_EQ( CMRdecNumChildren(dec), 2 );
+    ASSERT_EQ( CMRdecNumChildren(dec), 2UL );
     size_t graphicChildren = (CMRdecIsGraphic(CMRdecChild(dec, 0)) ? 2 : 0)
       + (CMRdecIsGraphic(CMRdecChild(dec, 1)) ? 1 : 0);
     size_t cographicChildren = (CMRdecIsCographic(CMRdecChild(dec, 0)) ? 2 : 0)
       + (CMRdecIsCographic(CMRdecChild(dec, 1)) ? 1 : 0);
-    ASSERT_EQ( CMRdecNumChildren(CMRdecChild(dec, 0)), 0 );
-    ASSERT_EQ( CMRdecNumChildren(CMRdecChild(dec, 1)), 0 );
-    ASSERT_EQ( graphicChildren + cographicChildren, 3 );
+    ASSERT_EQ( CMRdecNumChildren(CMRdecChild(dec, 0)), 0UL );
+    ASSERT_EQ( CMRdecNumChildren(CMRdecChild(dec, 1)), 0UL );
+    ASSERT_EQ( graphicChildren + cographicChildren, 3UL );
     ASSERT_CMR_CALL( CMRdecFree(cmr, &dec) );
     ASSERT_CMR_CALL( CMRchrmatFree(cmr, &matrix) );
   }

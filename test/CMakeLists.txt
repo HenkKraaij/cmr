@@ -11,6 +11,7 @@ add_executable(cmr_gtest
   common.c
   test_camion.cpp
   test_ctu.cpp
+  test_equimodular.cpp
   test_graph.cpp
   test_graphic.cpp
   test_hashtable.cpp
@@ -21,6 +22,9 @@ add_executable(cmr_gtest
   test_separation.cpp
   test_series_parallel.cpp
   test_tu.cpp)
+
+# Set standard to C++ 14.
+set_property(TARGET cmr_gtest PROPERTY CXX_STANDARD 14)
 
 # Add tests for non-exported functions only for static library.
 if(NOT SHARED)

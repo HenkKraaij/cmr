@@ -1,4 +1,4 @@
-#define CMR_DEBUG /* Uncomment to debug this file. */
+// #define CMR_DEBUG /* Uncomment to debug this file. */
 
 #include "env_internal.h"
 #include "regular_internal.h"
@@ -6,6 +6,8 @@
 
 CMR_ERROR CMRregularThreeConnectedIsR10(CMR* cmr, CMR_DEC* dec, bool* pisR10)
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(dec);
   assert(pisR10);
