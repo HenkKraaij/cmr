@@ -149,7 +149,7 @@ CMR_ERROR CMRsubmatZoomSubmat(CMR* cmr, CMR_SUBMAT* reference, CMR_SUBMAT* input
   return CMR_OKAY;
 }
 
-CMR_ERROR CMRsubmatWriteToStream(CMR* cmr, CMR_SUBMAT* submatrix, size_t numRows, size_t numColumns, FILE* stream)
+CMR_ERROR CMRsubmatPrint(CMR* cmr, CMR_SUBMAT* submatrix, size_t numRows, size_t numColumns, FILE* stream)
 {
   CMR_UNUSED(cmr);
 
@@ -183,7 +183,7 @@ CMR_ERROR CMRsubmatWriteToFile(CMR* cmr, CMR_SUBMAT* submatrix, size_t numRows, 
       return CMR_ERROR_OUTPUT;
   }
 
-  CMR_CALL( CMRsubmatWriteToStream(cmr, submatrix, numRows, numColumns, stream) );
+  CMR_CALL( CMRsubmatPrint(cmr, submatrix, numRows, numColumns, stream) );
 
   if (stream != stdout)
     fclose(stream);
@@ -339,7 +339,7 @@ CMR_ERROR CMRdblmatFree(CMR* cmr, CMR_DBLMAT** pmatrix)
   assert(matrix->numNonzeros == 0 || matrix->entryValues);
 
   CMR_CALL( CMRfreeBlockArray(cmr, &matrix->rowSlice) );
-  if (matrix->numNonzeros > 0)
+  if (matrix->entryColumns)
   {
     CMR_CALL( CMRfreeBlockArray(cmr, &matrix->entryColumns) );
     CMR_CALL( CMRfreeBlockArray(cmr, &matrix->entryValues) );
@@ -361,7 +361,7 @@ CMR_ERROR CMRintmatFree(CMR* cmr, CMR_INTMAT** pmatrix)
   assert(matrix->numNonzeros == 0 || matrix->entryValues);
 
   CMR_CALL( CMRfreeBlockArray(cmr, &matrix->rowSlice) );
-  if (matrix->numNonzeros > 0)
+  if (matrix->entryColumns)
   {
     CMR_CALL( CMRfreeBlockArray(cmr, &matrix->entryColumns) );
     CMR_CALL( CMRfreeBlockArray(cmr, &matrix->entryValues) );
@@ -383,7 +383,7 @@ CMR_ERROR CMRchrmatFree(CMR* cmr, CMR_CHRMAT** pmatrix)
   assert(matrix->numNonzeros == 0 || matrix->entryValues);
 
   CMR_CALL( CMRfreeBlockArray(cmr, &matrix->rowSlice) );
-  if (matrix->numNonzeros > 0)
+  if (matrix->entryColumns)
   {
     CMR_CALL( CMRfreeBlockArray(cmr, &matrix->entryColumns) );
     CMR_CALL( CMRfreeBlockArray(cmr, &matrix->entryValues) );
@@ -974,8 +974,13 @@ CMR_ERROR CMRchrmatPrintDense(CMR* cmr, CMR_CHRMAT* matrix, FILE* stream, char z
   if (header)
   {
     fputs("   ", stream);
+#if defined(CMR_DEBUG)
+    for (size_t column = 0; column < matrix->numColumns; ++column)
+      fprintf(stream, "%2zu ", (column+1) % 10);
+#else /* !CMR_DEBUG */
     for (size_t column = 0; column < matrix->numColumns; ++column)
       fprintf(stream, "%zu ", (column+1) % 10);
+#endif /* CMR_DEBUG */
     fputs("\n  ", stream);
     for (size_t column = 0; column < matrix->numColumns; ++column)
       fputs("--", stream);
@@ -988,6 +993,18 @@ CMR_ERROR CMRchrmatPrintDense(CMR* cmr, CMR_CHRMAT* matrix, FILE* stream, char z
     size_t first = matrix->rowSlice[row];
     size_t beyond = matrix->rowSlice[row + 1];
     size_t column = 0;
+#if defined(CMR_DEBUG)
+    for (size_t entry = first; entry < beyond; ++entry)
+    {
+      size_t entryColumn = matrix->entryColumns[entry];
+      for (; column < entryColumn; ++column)
+        fprintf(stream, " %c ", zeroChar);
+      fprintf(stream, "%2d ", matrix->entryValues[entry]);
+      ++column;
+    }
+    for (; column < matrix->numColumns; ++column)
+      fprintf(stream, " %c ", zeroChar);
+#else /* !CMR_DEBUG */
     for (size_t entry = first; entry < beyond; ++entry)
     {
       size_t entryColumn = matrix->entryColumns[entry];
@@ -998,8 +1015,10 @@ CMR_ERROR CMRchrmatPrintDense(CMR* cmr, CMR_CHRMAT* matrix, FILE* stream, char z
     }
     for (; column < matrix->numColumns; ++column)
       fprintf(stream, "%c ", zeroChar);
+#endif /* CMR_DEBUG */
     fputc('\n', stream);
   }
+  fflush(stream);
 
   return CMR_OKAY;
 }

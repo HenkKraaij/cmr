@@ -11,13 +11,22 @@
 #include <time.h>
 #include <float.h>
 
+CMR_ERROR CMRctuParamsInit(CMR_CTU_PARAMS* params)
+{
+  assert(params);
+
+  CMR_CALL( CMRtuParamsInit(&params->tu) );
+
+  return CMR_OKAY;
+}
+
 CMR_ERROR CMRstatsComplementTotalUnimodularityInit(CMR_CTU_STATISTICS* stats)
 {
   assert(stats);
 
   stats->totalCount = 0;
   stats->totalTime = 0.0;
-  CMR_CALL( CMRstatsTotalUnimodularityInit(&stats->tu) );
+  CMR_CALL( CMRtuStatsInit(&stats->tu) );
 
   return CMR_OKAY;
 }
@@ -35,7 +44,7 @@ CMR_ERROR CMRstatsComplementTotalUnimodularityPrint(FILE* stream, CMR_CTU_STATIS
 
   char subPrefix[256];
   snprintf(subPrefix, 256, "%stu ", prefix);
-  CMR_CALL( CMRstatsTotalUnimodularityPrint(stream, &stats->tu, subPrefix) );
+  CMR_CALL( CMRtuStatsPrint(stream, &stats->tu, subPrefix) );
 
   fprintf(stream, "%stotal: %ld in %f seconds\n", prefix, (unsigned long) stats->totalCount,
     stats->totalTime);
@@ -167,12 +176,20 @@ CMR_ERROR CMRcomplementRowColumn(CMR* cmr, CMR_CHRMAT* matrix, size_t complement
   return CMR_OKAY;
 }
 
-CMR_ERROR CMRtestComplementTotalUnimodularity(CMR* cmr, CMR_CHRMAT* matrix, bool* pisComplementTotallyUnimodular,
-  size_t* pcomplementRow, size_t* pcomplementColumn, CMR_CTU_STATISTICS* stats, double timeLimit)
+CMR_ERROR CMRctuTest(CMR* cmr, CMR_CHRMAT* matrix, bool* pisComplementTotallyUnimodular,
+  size_t* pcomplementRow, size_t* pcomplementColumn, CMR_CTU_PARAMS* params, CMR_CTU_STATISTICS* stats,
+  double timeLimit)
 {
   assert(cmr);
   CMRconsistencyAssert( CMRchrmatConsistency(matrix) );
   assert(pisComplementTotallyUnimodular);
+
+  CMR_CTU_PARAMS defaultParams;
+  if (!params)
+  {
+    CMR_CALL( CMRctuParamsInit(&defaultParams) );
+    params = &defaultParams;
+  }
 
   CMR_ERROR error = CMR_OKAY;
   clock_t totalClock = clock();
@@ -257,9 +274,17 @@ CMR_ERROR CMRtestComplementTotalUnimodularity(CMR* cmr, CMR_CHRMAT* matrix, bool
         goto cleanup;
       }
 
+#if defined(CMR_DEBUG)
+      CMRdbgMsg(2, "Matrix after complementing r%zu and c%zu:\n", complementRow, complementColumn);
+      CMR_CALL( CMRchrmatPrintDense(cmr, complementedMatrix, stdout, '0', true) );
+#endif /* CMR_DEBUG */
+
       bool isTU = false;
-      CMR_CALL( CMRtestTotalUnimodularity(cmr, complementedMatrix, &isTU, NULL, NULL, NULL,
+      CMR_CALL( CMRtuTest(cmr, complementedMatrix, &isTU, NULL, NULL, &params->tu,
         stats ? &stats->tu : NULL, remainingTime) );
+
+      CMRdbgMsg(2, "-> %sTU.\n", isTU ? "IS " : "is NOT ");
+
       if (!isTU)
       {
         if (pcomplementRow)

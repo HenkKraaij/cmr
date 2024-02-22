@@ -8,6 +8,7 @@ set(CMAKE_C_STANDARD 99)
 option(SHARED "Build shared libraries" ON)
 set(BUILD_SHARED_LIBS ${SHARED})
 message(STATUS "Build shared libraries: " ${SHARED})
+option(GMP "Compile with GMP" ON)
 option(GENERATORS "Compile matrix generators" OFF)
 option(TESTS "Compile tests" ON)
 message(STATUS "Build tests: " ${TESTS})
@@ -33,24 +34,25 @@ else()
   add_compile_options(-Wall -Wextra -Wunused)
 endif()
 
-find_package(GMP)
-set(CMR_WITH_GMP ${GMP_FOUND})
+if(GMP)
+  find_package(GMP)
+  set(CMR_WITH_GMP ${GMP_FOUND})
+else()
+  set(CMR_WITH_GMP FALSE)
+endif()
 
 # Target for the CMR library.
 add_library(cmr
   src/cmr/balanced.c
   src/cmr/camion.c
   src/cmr/ctu.c
-  src/cmr/dec.c
   src/cmr/densematrix.c
   src/cmr/element.c
   src/cmr/env.c
   src/cmr/hereditary_property.c
   src/cmr/matrix.c
-  src/cmr/one_sum.c
+  src/cmr/block_decomposition.c
   src/cmr/tu.c
-  #src/cmr/determinant.cpp
-  #src/cmr/ghouila_houri.cpp
   src/cmr/graph.c
   src/cmr/graphic.c
   src/cmr/hashtable.c
@@ -58,27 +60,20 @@ add_library(cmr
   src/cmr/equimodular.c
   src/cmr/linear_algebra.c
   src/cmr/listmatrix.c
-  #src/cmr/logger.cpp
-  #src/cmr/matrix.cpp
   src/cmr/matroid.c
-  #src/cmr/matroid_decomposition.cpp
-  #src/cmr/matroid_graph.cpp
-  #src/cmr/nested_minor_sequence.cpp
-  src/cmr/regular_nested_minor_sequence.c
   src/cmr/network.c
   src/cmr/regular.c
-  src/cmr/regular_enumerate.c
-  src/cmr/regular_graphic.c
-  src/cmr/regular_onesum.c
-  src/cmr/regular_r10.c
-  src/cmr/regular_series_parallel.c
-  #src/cmr/separation.cpp
+  src/cmr/regularity.c
+  src/cmr/regularity_partition.c
+  src/cmr/regularity_graphic.c
+  src/cmr/regularity_nested_minor_sequence.c
+  src/cmr/regularity_onesum.c
+  src/cmr/regularity_threesum.c
+  src/cmr/regularity_r10.c
+  src/cmr/regularity_series_parallel.c
   src/cmr/separation.c
   src/cmr/series_parallel.c
   src/cmr/sort.c
-  #src/cmr/total_unimodularity.cpp
-  #src/cmr/unimodularity.cpp
-  #src/cmr/zero_plus_minus_one.cpp
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")

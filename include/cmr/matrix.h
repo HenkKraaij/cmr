@@ -100,7 +100,7 @@ CMR_ERROR CMRsubmatZoomSubmat(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRsubmatWriteToStream(
+CMR_ERROR CMRsubmatPrint(
   CMR* cmr,               /**< \ref CMR environment. */
   CMR_SUBMAT* submatrix,  /**< Reference submatrix. */
   size_t numRows,         /**< Number of rows of original matrix. */
@@ -1071,7 +1071,6 @@ CMR_ERROR CMRchrmatFindEntry(
   size_t column,        /**< A column. */
   size_t* pentry        /**< Pointer for storing the entry at \p row, \p column, or \c SIZE_MAX if it is zero. */
 );
-
 
 #ifdef __cplusplus
 }

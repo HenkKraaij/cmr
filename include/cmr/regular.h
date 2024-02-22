@@ -20,7 +20,6 @@ extern "C" {
 #include <cmr/series_parallel.h>
 #include <cmr/graphic.h>
 #include <cmr/network.h>
-#include <cmr/dec.h>
 
 typedef enum
 {
@@ -31,19 +30,51 @@ typedef enum
 
 typedef struct
 {
-  bool directGraphicness;       /**< \brief Whether to use fast graphicness routines; default: \c true */
-  bool seriesParallel;          /**< \brief Whether to allow series-parallel operations in the decomposition tree;
-                                 **         default: \c true */
-  bool planarityCheck;          /**< \brief Whether minors identified as graphic should still be checked for
-                                 **         cographicness; default: \c false. */
-  bool completeTree;            /**< \brief Whether to compute a complete decomposition tree (even if already
-                                 **         non-regular; default: \c false. */
-  CMR_DEC_CONSTRUCT matrices;   /**< \brief Which matrices of the decomposition to construct; default:
-                                 **         \ref CMR_DEC_CONSTRUCT_NONE. */
-  CMR_DEC_CONSTRUCT transposes; /**< \brief Which transposed matrices of the decomposition to construct; default:
-                                 **         \ref CMR_DEC_CONSTRUCT_NONE. */
-  CMR_DEC_CONSTRUCT graphs;     /**< \brief Which (co)graphs to construct; default: \ref CMR_DEC_CONSTRUCT_NONE. */
-} CMR_REGULAR_PARAMETERS;
+  bool directGraphicness;
+  /**< \brief Whether to use fast graphicness routines; default: \c true */
+  bool seriesParallel;
+  /**< \brief Whether to allow series-parallel operations in the decomposition tree; default: \c true */
+  bool planarityCheck;
+  /**< \brief Whether minors identified as graphic should still be checked for cographicness; default: \c false. */
+  bool completeTree;
+  /**< \brief Whether to compute a complete decomposition tree (even if already non-regular; default: \c false. */
+  bool threeSumPivotChildren;
+  /**< \brief Whether pivots for 3-sums shall be applied such that the matrix contains both child matrices as
+   **         submatrices, if possible. */
+  int threeSumStrategy;
+  /**< \brief Whether to perform pivots to change the rank distribution, and how to construct the children.
+   **
+   ** The value is a bit-wise or of three decisions. The first decision is that of the **rank distribution**:
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_NO_PIVOTS to not change the rank distribution (default), or
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_DISTRIBUTED_RANKS to enforce distributed ranks (1 + 1), or
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_CONCENTRATED_RANK to enforce concentrated ranks (2 + 0).
+   **
+   **  The second decision determines the layout of the **first child** matrix:
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_FIRST_WIDE for a wide first child (default) in case of distributed ranks,
+   **     or
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_FIRST_TALL for a tall first child in that case.
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_FIRST_MIXED for a mixed first child (default) in case of concentrated
+   **     ranks, or
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_FIRST_ALLREPR for a first child with all representing rows in that case.
+   **
+   **  Similarly, the third decision determines the layout of the **second child** matrix:
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_SECOND_WIDE for a wide second child (default) in case of distributed ranks,
+   **     or
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_SECOND_TALL for a tall second child in that case.
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_SECOND_MIXED for a mixed second child (default) in case of concentrated
+   **     ranks, or
+   **   - \ref CMR_MATROID_DEC_THREESUM_FLAG_SECOND_ALLREPR for a first second with all representing rows in that case.
+   **
+   ** \see \ref matroid_decomposition for a description of these layouts.
+   **
+   ** A decomposition as described by Seymour can be selected via \ref CMR_MATROID_DEC_THREESUM_FLAG_SEYMOUR.
+   ** A decomposition as used by Truemper can be selected via \ref CMR_MATROID_DEC_THREESUM_FLAG_TRUEMPER.
+   ** The default is to not carry out any pivots and choose Seymour's or Truemper's definition depending on the rank
+   ** distribution. */
+
+  CMR_DEC_CONSTRUCT graphs;
+  /**< \brief Which (co)graphs to construct; default: \ref CMR_DEC_CONSTRUCT_NONE. */
+} CMR_REGULAR_PARAMS;
 
 /**
  * \brief Initializes the default parameters for regularity testing.
@@ -52,8 +83,8 @@ typedef struct
  */
 
 CMR_EXPORT
-CMR_ERROR CMRparamsRegularInit(
-  CMR_REGULAR_PARAMETERS* params  /**< Pointer to parameters. */
+CMR_ERROR CMRregularParamsInit(
+  CMR_REGULAR_PARAMS* params  /**< Pointer to parameters. */
 );
 
 /**
@@ -67,6 +98,7 @@ typedef struct
   CMR_SP_STATISTICS seriesParallel;     /**< Statistics for series-parallel algorithm. */
   CMR_GRAPHIC_STATISTICS graphic;       /**< Statistics for direct (co)graphic checks. */
   CMR_NETWORK_STATISTICS network;       /**< Statistics for direct (co)network checks. */
+  CMR_CAMION_STATISTICS camion;         /**< Statistics for Camion signing. */
   uint32_t sequenceExtensionCount;      /**< Number of extensions of sequences of nested minors. */
   double sequenceExtensionTime;         /**< Time of extensions of sequences of nested minors. */
   uint32_t sequenceGraphicCount;        /**< Number (co)graphicness tests applied to sequence of nested minors. */
@@ -74,7 +106,7 @@ typedef struct
   uint32_t enumerationCount;            /**< Number of calls to enumeration algorithm for candidate 3-separations. */
   double enumerationTime;               /**< Time of enumeration of candidate 3-separations. */
   uint32_t enumerationCandidatesCount;  /**< Number of enumerated candidates for 3-separations. */
-} CMR_REGULAR_STATISTICS;
+} CMR_REGULAR_STATS;
 
 
 /**
@@ -82,8 +114,8 @@ typedef struct
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsRegularInit(
-  CMR_REGULAR_STATISTICS* stats /**< Pointer to statistics. */
+CMR_ERROR CMRregularStatsInit(
+  CMR_REGULAR_STATS* stats /**< Pointer to statistics. */
 );
 
 /**
@@ -91,10 +123,10 @@ CMR_ERROR CMRstatsRegularInit(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsRegularPrint(
-  FILE* stream,                   /**< File stream to print to. */
-  CMR_REGULAR_STATISTICS* stats,  /**< Pointer to statistics. */
-  const char* prefix              /**< Prefix string to prepend to each printed line (may be \c NULL). */
+CMR_ERROR CMRregularStatsPrint(
+  FILE* stream,             /**< File stream to print to. */
+  CMR_REGULAR_STATS* stats, /**< Pointer to statistics. */
+  const char* prefix        /**< Prefix string to prepend to each printed line (may be \c NULL). */
 );
   
 /**
@@ -109,15 +141,15 @@ CMR_ERROR CMRstatsRegularPrint(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestBinaryRegular(
-  CMR* cmr,                       /**< \ref CMR environment. */
-  CMR_CHRMAT* matrix,             /**< Input matrix. */
-  bool *pisRegular,               /**< Pointer for storing whether \p matrix is regular. */
-  CMR_DEC** pdec,                 /**< Pointer for storing the decomposition tree (may be \c NULL). */
-  CMR_MINOR** pminor,             /**< Pointer for storing an \f$ F_7 \f$ or \f$ F_7^\star \f$ minor. */
-  CMR_REGULAR_PARAMETERS* params, /**< Parameters for the computation (may be \c NULL for defaults). */
-  CMR_REGULAR_STATISTICS* stats,  /**< Statistics for the computation (may be \c NULL). */
-  double timeLimit                /**< Time limit to impose. */
+CMR_ERROR CMRregularTest(
+  CMR* cmr,                   /**< \ref CMR environment. */
+  CMR_CHRMAT* matrix,         /**< Input matrix. */
+  bool *pisRegular,           /**< Pointer for storing whether \p matrix is regular. */
+  CMR_MATROID_DEC** pdec,     /**< Pointer for storing the decomposition tree (may be \c NULL). */
+  CMR_MINOR** pminor,         /**< Pointer for storing an \f$ F_7 \f$ or \f$ F_7^\star \f$ minor. */
+  CMR_REGULAR_PARAMS* params, /**< Parameters for the computation (may be \c NULL for defaults). */
+  CMR_REGULAR_STATS* stats,   /**< Statistics for the computation (may be \c NULL). */
+  double timeLimit            /**< Time limit to impose. */
 );
 
 #ifdef __cplusplus

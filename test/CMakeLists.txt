@@ -9,6 +9,7 @@ endif()
 # Target for the googletest.
 add_executable(cmr_gtest
   common.c
+  test_balanced.cpp
   test_camion.cpp
   test_ctu.cpp
   test_equimodular.cpp
@@ -16,6 +17,7 @@ add_executable(cmr_gtest
   test_graphic.cpp
   test_hashtable.cpp
   test_matrix.cpp
+  test_matroid.cpp
   test_main.cpp
   test_network.cpp
   test_regular.cpp

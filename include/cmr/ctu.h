@@ -17,15 +17,31 @@ extern "C" {
 #include <cmr/matrix.h>
 #include <cmr/tu.h>
 
+typedef struct
+{
+  CMR_TU_PARAMS tu; /**< \brief Parameters for TU test. */
+} CMR_CTU_PARAMS;
+
+/**
+ * \brief Initializes the default parameters for recognition of [complement totally unimodular](\ref ctu) matrices.
+ *
+ * These are selected for minimum running time.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRctuParamsInit(
+  CMR_CTU_PARAMS* params  /**< Pointer to parameters. */
+);
+
 /**
  * \brief Statistics for recognition algorithm for [totally unimodular](\ref tu) matrices.
  */
 
 typedef struct
 {
-  uint32_t totalCount;    /**< Total number of invocations. */
+  uint32_t totalCount;  /**< Total number of invocations. */
   double totalTime;     /**< Total time of all invocations. */
-  CMR_TU_STATISTICS tu; /**< Total unimodularity test. */
+  CMR_TU_STATS tu;      /**< Total unimodularity test. */
 } CMR_CTU_STATISTICS;
 
 /**
@@ -73,12 +89,13 @@ CMR_ERROR CMRcomplementRowColumn(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestComplementTotalUnimodularity(
+CMR_ERROR CMRctuTest(
   CMR* cmr,                             /**< \ref CMR environment */
   CMR_CHRMAT* matrix,                   /**< Matrix \f$ M \f$. */
   bool* pisComplementTotallyUnimodular, /**< Pointer for storing whether \f$ M \f$ is complement totally unimodular. */
   size_t* pcomplementRow,               /**< Pointer for storing the row to be complemented (may be \c NULL). */
   size_t* pcomplementColumn,            /**< Pointer for storing the column to be complemented (may be \c NULL). */
+  CMR_CTU_PARAMS* params,               /**< Parameters for the computation (may be \c NULL for defaults). */
   CMR_CTU_STATISTICS* stats,            /**< Statistics for the computation (may be \c NULL). */
   double timeLimit                      /**< Time limit to impose. */
 );

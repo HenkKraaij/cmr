@@ -4,6 +4,7 @@
 #include <time.h>
 #include <float.h>
 
+#include <cmr/env.h>
 #include <cmr/matrix.h>
 #include <cmr/tu.h>
 #include <cmr/linear_algebra.h>
@@ -59,30 +60,25 @@ CMR_ERROR testTotalUnimodularity(
   /* Actual test. */
 
   bool isTU;
-  CMR_DEC* decomposition = NULL;
+  CMR_MATROID_DEC* decomposition = NULL;
   CMR_SUBMAT* submatrix = NULL;
-  CMR_TU_PARAMETERS params;
-  CMR_CALL( CMRparamsTotalUnimodularityInit(&params) );
+  CMR_TU_PARAMS params;
+  CMR_CALL( CMRtuParamsInit(&params) );
   params.algorithm = algorithm;
   params.regular.completeTree = outputTreeFileName;
-  params.regular.matrices = outputTreeFileName ? CMR_DEC_CONSTRUCT_ALL : CMR_DEC_CONSTRUCT_NONE;
   params.regular.directGraphicness = directGraphicness;
   params.regular.seriesParallel = seriesParallel;
-  CMR_TU_STATISTICS stats;
-  CMR_CALL( CMRstatsTotalUnimodularityInit(&stats));
-  CMR_CALL( CMRtestTotalUnimodularity(cmr, matrix, &isTU, outputTreeFileName ? &decomposition : NULL,
+  CMR_TU_STATS stats;
+  CMR_CALL( CMRtuStatsInit(&stats));
+  CMR_CALL( CMRtuTest(cmr, matrix, &isTU, outputTreeFileName ? &decomposition : NULL,
     outputSubmatrixFileName ? &submatrix : NULL, &params, &stats, timeLimit) );
 
   printf("Matrix %stotally unimodular.\n", isTU ? "IS " : "IS NOT ");
   if (printStats)
-    CMR_CALL( CMRstatsTotalUnimodularityPrint(stderr, &stats, NULL) );
+    CMR_CALL( CMRtuStatsPrint(stderr, &stats, NULL) );
 
   if (decomposition)
-  {
-    // TODO: Write decomposition.
-    assert(!"NOT IMPLEMENTED");
-    exit(EXIT_FAILURE);
-  }
+    CMR_CALL( CMRmatroiddecPrint(cmr, decomposition, stderr, 0, true, true, true, true, true, true) );
 
   if (submatrix && outputSubmatrixFileName)
   {
@@ -103,7 +99,7 @@ CMR_ERROR testTotalUnimodularity(
 
   /* Cleanup. */
 
-  CMR_CALL( CMRdecFree(cmr, &decomposition) );
+  CMR_CALL( CMRmatroiddecFree(cmr, &decomposition) );
   CMR_CALL( CMRsubmatFree(cmr, &submatrix) );
   CMR_CALL( CMRchrmatFree(cmr, &matrix) );
   CMR_CALL( CMRfreeEnvironment(&cmr) );
@@ -133,7 +129,7 @@ int printUsage(const char* program)
   fputs("  --time-limit LIMIT   Allow at most LIMIT seconds for the computation.\n", stderr);
   fputs("  --no-direct-graphic  Check only 3-connected matrices for regularity.\n", stderr);
   fputs("  --no-series-parallel Do not allow series-parallel operations in decomposition tree.\n\n", stderr);
-  fputs("  --algo ALGO          Use algorithm from {decomposition, submatrix, partition}; default: decomposition.\n\n",
+  fputs("  --algo ALGO          Use algorithm from {decomposition, eulerian, partition}; default: decomposition.\n\n",
     stderr);
   fputs("If IN-MAT is `-' then the matrix is read from stdin.\n", stderr);
   fputs("If OUT-DEC or NON-SUB is `-' then the decomposition tree (resp. the submatrix) is written to stdout.\n",
@@ -196,8 +192,8 @@ int main(int argc, char** argv)
     {
       if (!strcmp(argv[a+1], "decomposition"))
         algorithm = CMR_TU_ALGORITHM_DECOMPOSITION;
-      else if (!strcmp(argv[a+1], "submatrix"))
-        algorithm = CMR_TU_ALGORITHM_SUBMATRIX;
+      else if (!strcmp(argv[a+1], "eulerian"))
+        algorithm = CMR_TU_ALGORITHM_EULERIAN;
       else if (!strcmp(argv[a+1], "partition"))
         algorithm = CMR_TU_ALGORITHM_PARTITION;
       else
