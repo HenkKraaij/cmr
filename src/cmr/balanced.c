@@ -1,4 +1,4 @@
-// #define CMR_DEBUG /* Uncomment to debug */
+#define CMR_DEBUG /* Uncomment to debug */
 
 #include <cmr/balanced.h>
 
@@ -371,6 +371,163 @@ CMR_ERROR balancedTestEnumerate(
   return CMR_OKAY;
 }
 
+static
+CMR_ERROR balancedBFS(
+  CMR* cmr,                     /**< \ref CMR environment */
+  CMR_CHRMAT* matrix,           /**< Matrix \f$ M \f$. */
+  CMR_CHRMAT* transpose,
+  CMR_ELEMENT source,
+  CMR_ELEMENT target,
+  bool* rowMask,
+  bool* colMask,
+  bool* rowsInPath,
+  bool* colsInPath
+)
+{
+  // Ensure that the source element is valid for this matrix.
+  if (CMRelementIsRow(source)) {
+    assert(CMRelementToRowIndex(source) < matrix->numRows);
+  }
+  else if (CMRelementIsColumn(source)){
+    assert(CMRelementToColumnIndex(source) < matrix->numColumns);
+  }
+  // Ensure that the target element is valid for this matrix.
+  if (CMRelementIsRow(target)) {
+    assert(CMRelementToRowIndex(target) < matrix->numRows);
+  }
+  else if (CMRelementIsColumn(target)){
+    assert(CMRelementToColumnIndex(target) < matrix->numColumns);
+  }
+
+  CMR_ELEMENT* queue = NULL;
+  CMR_CALL( CMRallocStackArray(cmr, &queue, matrix->numRows + matrix->numColumns));
+  queue[0] = source;
+  size_t current = 0;
+  size_t potential = 1;
+  CMR_ELEMENT* backtrack = NULL; /**< Array that stores the CMR_ELEMENT to get back to the source. */
+  CMR_CALL( CMRallocStackArray(cmr, &backtrack, matrix->numRows + matrix->numColumns));
+  // Initialise the backtrack array, setting all but the source to NULL. The source will backtrack to itself for now.
+  for (int i = 0; i < matrix->numRows + matrix->numColumns; i++) {
+    backtrack[i] = NULL;
+  }
+  if (CMRelementIsRow(source)) {
+    backtrack[CMRrowToElement(source)] = source;
+  } else if (CMRelementIsColumn(source)) {
+    backtrack[matrix->numRows + CMRcolumnToElement(source)] = source;
+  }
+  bool isTargetFound = false;
+
+  while (current < potential && !isTargetFound)
+  {
+
+    CMRdbgMsg(1, "queue:     ");
+    for (int i = 0; i < potential; i++) {
+      CMRdbgMsg(0, "%s ", CMRelementString(queue[i], NULL));
+    }
+    CMRdbgMsg(0, "\n current:   ");
+    for (int i = 0; i < current; i++) {
+      CMRdbgMsg(0, "   ");
+    }
+    CMRdbgMsg(0, "^^\n");
+
+
+    CMR_ELEMENT currentElement = queue[current];
+    if (CMRelementIsRow(currentElement))
+    {
+      size_t currentRow = CMRelementToRowIndex(currentElement);
+      // Loop over the columns that the currentRow is adjacent to.
+      for (int i = matrix->rowSlice[currentRow]; i < matrix->rowSlice[currentRow + 1]; i++)
+      {
+        size_t col = matrix->entryColumns[i];
+        if (colMask[col] && (backtrack[matrix->numRows + col] == NULL))
+        {
+          CMR_ELEMENT foundElement = CMRcolumnToElement(col);
+          queue[potential] = foundElement;
+          potential++;
+          backtrack[matrix->numRows + col] = currentElement;
+
+          if (foundElement == target)
+          {
+            isTargetFound = true;
+          }
+          
+          CMRdbgMsg(2, "%s->", CMRelementString(currentElement, NULL));
+          CMRdbgMsg(0, "%s\n", CMRelementString(foundElement, NULL));
+        }
+      }
+    }
+    else if (CMRelementIsColumn(currentElement))
+    {
+      size_t currentCol = CMRelementToColumnIndex(currentElement);
+      // Loop over the rows that the currentCol is adjacent to.
+      for (int i = transpose->rowSlice[currentCol]; i < transpose->rowSlice[currentCol + 1]; i++)
+      {
+        size_t row = transpose->entryColumns[i];
+        if (rowMask[row] && (backtrack[row] == NULL))
+        {
+          CMR_ELEMENT foundElement = CMRrowToElement(row);
+          queue[potential] = foundElement;
+          potential++;
+          backtrack[row] = currentElement;
+
+          if (foundElement == target)
+          {
+            isTargetFound = true;
+          }
+
+          CMRdbgMsg(2, "%s->", CMRelementString(currentElement, NULL));
+          CMRdbgMsg(0, "%s\n", CMRelementString(foundElement, NULL));
+        }
+      }
+    }
+    current++;
+
+
+    CMRdbgMsg(1, "backtrack: ");
+    for (int i = 0; i < matrix->numRows + matrix->numColumns; i++) {
+      CMRdbgMsg(0, "%s ", backtrack[i] != NULL ? CMRelementString(backtrack[i], NULL) : "--");
+    }
+    CMRdbgMsg(0, "\n");
+  }
+
+  CMRdbgMsg(0, "target %s found!\n", CMRelementString(target, NULL));
+  CMRdbgMsg(0, "path from target to source: %s ", CMRelementString(target, NULL));
+
+  // Backtrack from the target to the source. 
+  // Each element on the path is stored in the rowsInPath and colsInPath arrays, including the target and source.
+  CMR_ELEMENT backtrackElement = target;
+  while (backtrackElement != source) 
+  {
+    if (CMRelementIsRow(backtrackElement))
+    {
+      rowsInPath[CMRelementToRowIndex(backtrackElement)] = true;
+      backtrackElement = backtrack[CMRelementToRowIndex(backtrackElement)];
+    } 
+    else if (CMRelementIsColumn(backtrackElement))
+    {
+      colsInPath[CMRelementToColumnIndex(backtrackElement)] = true;
+      backtrackElement = backtrack[matrix->numRows + CMRelementToColumnIndex(backtrackElement)];
+    }
+    CMRdbgMsg(0, "%s ", CMRelementString(backtrackElement, NULL));
+  }
+  // Also store the source in the path arrays.
+  if (CMRelementIsRow(backtrackElement))
+  {
+    rowsInPath[CMRelementToRowIndex(backtrackElement)] = true;
+  } 
+  else if (CMRelementIsColumn(backtrackElement))
+  {
+    colsInPath[CMRelementToColumnIndex(backtrackElement)] = true;
+  }
+  CMRdbgMsg(0, "\n");
+
+
+  CMR_CALL( CMRfreeStackArray(cmr, &backtrack));
+  CMR_CALL( CMRfreeStackArray(cmr, &queue));
+  
+  return CMR_OKAY;
+}
+
 /**
  * \brief Tests a connected series-parallel reduced matrix \f$ M \f$ for being [balanced](\ref balanced) using the
  *        graph-based algorithm.
@@ -399,6 +556,93 @@ CMR_ERROR balancedTestGraph(
   assert(timeLimit > 0);
 
   assert(!"Not implemented");
+
+  CMR_CHRMAT* transpose = NULL;
+  CMRchrmatTranspose(cmr, matrix, &transpose); // also handles the memory allocation for transpose.
+  
+  CMRdbgMsg(0, "\n");
+  CMRdbgMsg(0, "matrix: \n");
+  CMRchrmatPrintDense(cmr, matrix, stdout, '0', true);
+  CMRdbgMsg(0, "transpose matrix: \n");
+  CMRchrmatPrintDense(cmr, transpose, stdout, '0', true);
+
+  CMR_ELEMENT source = NULL;
+  CMR_ELEMENT target = NULL;
+  // For now use manual input for testing the BFS on the above matrix.
+  char inputSource[100];
+  char inputTarget[100];
+  printf("Enter source element: ");
+  scanf("%s", inputSource);
+  if (inputSource[0] == 'r') {
+    source = CMRrowToElement(atoi(&inputSource[1])-1);
+  } else if (inputSource[0] == 'c') {
+    source = CMRcolumnToElement(atoi(&inputSource[1])-1);
+  } else {
+    printf("INVALID INPUT\n");
+  }
+
+  printf("Enter target element: ");
+  scanf("%s", inputTarget);
+  if (inputTarget[0] == 'r') {
+    target = CMRrowToElement(atoi(&inputTarget[1])-1);
+  } else if (inputTarget[0] == 'c') {
+    target = CMRcolumnToElement(atoi(&inputTarget[1])-1);
+  } else {
+    printf("INVALID INPUT\n");
+  }
+
+  
+  CMRdbgMsg(0, "source: %s\n", CMRelementString(source, NULL));
+  CMRdbgMsg(0, "target: %s\n", CMRelementString(target, NULL));
+
+  bool* rowMask = NULL; /**< boolArray for the mask of the rows allowed to be used in the BFS. */
+  bool* colMask = NULL; /**< boolArray for the mask of the cols allowed to be used in the BFS. */
+  bool* rowsInPath = NULL; /**< boolArray for the mask of the rows that are in the path found by the BFS. */
+  bool* colsInPath = NULL; /**< boolArray for the mask of the cols that are in the path found by the BFS. */
+  // CMRdbgMsg(0, "size of bool: %s\n", sizeof(bool)); // what is the size of bool? does alloc not allocate way too much for this boolArray?
+  CMR_CALL( CMRallocStackArray(cmr, &rowMask, matrix->numRows) );
+  CMR_CALL( CMRallocStackArray(cmr, &colMask, matrix->numColumns) );
+  CMR_CALL( CMRallocStackArray(cmr, &rowsInPath, matrix->numRows) );
+  CMR_CALL( CMRallocStackArray(cmr, &colsInPath, matrix->numColumns) );
+  // Initialize the rowMask and colMask to be all true.
+  for (int i = 0; i < matrix->numRows; i++)
+  {
+    rowMask[i] = true;
+    rowsInPath[i] = false;
+    // CMRdbgMsg(2, "%s %d %s\n", CMRelementString(CMRrowToElement(i), NULL), rowMask[i], rowMask[i] ? "true" : "false");
+  }
+  for (int i = 0; i < matrix->numColumns; i++)
+  {
+    colMask[i] = true;
+    colsInPath[i] = false;
+    // CMRdbgMsg(2, "%s %d %s\n", CMRelementString(CMRcolToElement(i), NULL), colMask[i], colMask[i] ? "true" : "false");
+  }
+
+
+  balancedBFS(cmr, matrix, transpose, source, target, rowMask, colMask, rowsInPath, colsInPath);
+
+  CMRdbgMsg(0, "\n");
+  CMRdbgMsg(0, "matrix: \n");
+  CMRchrmatPrintDense(cmr, matrix, stdout, '0', true);
+  CMRdbgMsg(0, "Results of BFS:\n");
+  for (int row = 0; row < matrix->numRows; row++)
+  {
+    CMRdbgMsg(1, "%s ", CMRelementString(CMRrowToElement(row), NULL));
+    CMRdbgMsg(0, "%s\n", rowsInPath[row] ? "true" : "false");
+  }
+  for (int col = 0; col < matrix->numColumns; col++)
+  {
+    CMRdbgMsg(1, "%s ", CMRelementString(CMRcolumnToElement(col), NULL));
+    CMRdbgMsg(0, "%s\n", colsInPath[col] ? "true" : "false");
+  }
+
+  CMR_CALL( CMRfreeStackArray(cmr, &colsInPath));
+  CMR_CALL( CMRfreeStackArray(cmr, &rowsInPath));
+  CMR_CALL( CMRfreeStackArray(cmr, &colMask));
+  CMR_CALL( CMRfreeStackArray(cmr, &rowMask));
+
+  CMR_CALL( CMRchrmatFree(cmr, &transpose) );
+  
 
   return CMR_OKAY;
 }
@@ -432,7 +676,10 @@ CMR_ERROR balancedTestChooseAlgorithm(
   if (algorithm == CMR_BALANCED_ALGORITHM_AUTO)
   {
     /* TODO: Conclude experiments with a recommendation for when to use which algorithm. */
-    algorithm = CMR_BALANCED_ALGORITHM_SUBMATRIX;
+    // algorithm = CMR_BALANCED_ALGORITHM_SUBMATRIX;
+
+    /* FOR TESTING PURPOSES AUTO NOW USES GRAPH */
+    algorithm = CMR_BALANCED_ALGORITHM_GRAPH;
   }
 
   if (algorithm == CMR_BALANCED_ALGORITHM_GRAPH)
@@ -441,7 +688,7 @@ CMR_ERROR balancedTestChooseAlgorithm(
     if (error != CMR_ERROR_TIMEOUT)
       CMR_CALL(error);
 
-    return CMR_ERROR_INVALID;
+    // return CMR_ERROR_INVALID;
   }
   else
   {
