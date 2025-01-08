@@ -81,6 +81,8 @@ CMR_ERROR CMRfreeEnvironment(CMR** pcmr)
 
 CMR_ERROR _CMRallocBlock(CMR* cmr, void** ptr, size_t size)
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(ptr);
   assert(*ptr == NULL);
@@ -91,6 +93,7 @@ CMR_ERROR _CMRallocBlock(CMR* cmr, void** ptr, size_t size)
 
 CMR_ERROR _CMRfreeBlock(CMR* cmr, void** ptr, size_t size)
 {
+  CMR_UNUSED(cmr);
   CMR_UNUSED(size);
 
   assert(cmr);
@@ -104,6 +107,8 @@ CMR_ERROR _CMRfreeBlock(CMR* cmr, void** ptr, size_t size)
 
 CMR_ERROR _CMRallocBlockArray(CMR* cmr, void** ptr, size_t size, size_t length)
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(ptr);
   assert(*ptr == NULL);
@@ -115,6 +120,8 @@ CMR_ERROR _CMRallocBlockArray(CMR* cmr, void** ptr, size_t size, size_t length)
 
 CMR_ERROR _CMRreallocBlockArray(CMR* cmr, void** ptr, size_t size, size_t length)
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(ptr);
   *ptr = realloc(*ptr, size * length);
@@ -138,6 +145,8 @@ CMR_ERROR _CMRduplicateBlockArray(CMR* cmr, void** ptr, size_t size, size_t leng
 
 CMR_ERROR _CMRfreeBlockArray(CMR* cmr, void** ptr)
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(ptr);
   free(*ptr);
@@ -182,11 +191,13 @@ CMR_ERROR _CMRfreeStack(
 
 void CMRassertStackConsistency(CMR* cmr)
 {
-
+  CMR_UNUSED(cmr);
 }
 
 size_t CMRgetStackUsage(CMR* cmr)
 {
+  CMR_UNUSED(cmr);
+
   return 0;
 }
 
@@ -335,10 +346,10 @@ void CMRassertStackConsistency(
   {
     CMR_STACK* stack = &cmr->stacks[s];
 
-    void* ptr = &stack->memory[stack->top];
+    char* ptr = &stack->memory[stack->top];
     CMRdbgMsg(2, "Stack %d of size %d has memory range [%p,%p). top is %p\n", s, STACK_SIZE(s), stack->memory,
       stack->memory + STACK_SIZE(s), ptr);
-    while (ptr < (void*)stack->memory + STACK_SIZE(s))
+    while (ptr < (char*)stack->memory + STACK_SIZE(s))
     {
       CMRdbgMsg(4, "pointer is %p.", ptr);
       size_t size = *((size_t*) ptr);
@@ -351,6 +362,18 @@ void CMRassertStackConsistency(
 }
 
 #endif /* !NDEBUG */
+  
+size_t CMRgetStackUsage(CMR* cmr)
+{ 
+  size_t result = 0;
+  for (size_t stack = 0; stack < cmr->currentStack; ++stack)
+    result += (FIRST_STACK_SIZE << stack);
+  result += (FIRST_STACK_SIZE << cmr->currentStack) - cmr->stacks[cmr->currentStack].top; 
+
+  return result;
+}
+
+#endif /* else REPLACE_STACK_BY_MALLOC */
 
 void CMRraiseErrorMessage(CMR* cmr, const char* format, ...)
 {
@@ -384,19 +407,6 @@ void CMRclearErrorMessage(CMR* cmr)
     cmr->errorMessage = NULL;
   }
 }
-  
-size_t CMRgetStackUsage(CMR* cmr)
-{ 
-  size_t result = 0;
-  for (size_t stack = 0; stack < cmr->currentStack; ++stack)
-    result += (FIRST_STACK_SIZE << stack);
-  result += (FIRST_STACK_SIZE << cmr->currentStack) - cmr->stacks[cmr->currentStack].top; 
-
-  return result;
-}
-
-#endif /* else REPLACE_STACK_BY_MALLOC */
-
 
 char* CMRconsistencyMessage(const char* format, ...)
 {

@@ -4,6 +4,7 @@
 #include <time.h>
 #include <float.h>
 
+#include <cmr/env.h>
 #include <cmr/matrix.h>
 #include <cmr/series_parallel.h>
 
@@ -46,7 +47,7 @@ CMR_ERROR recognizeSeriesParallel(
     return CMR_ERROR_INPUT;
   }
 
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros, (clock() - readClock) * 1.0 / CLOCKS_PER_SEC);
 
   /* Run the search. */
@@ -58,30 +59,30 @@ CMR_ERROR recognizeSeriesParallel(
   CMR_SUBMAT* violatorSubmatrix = NULL;
 
   CMR_SP_STATISTICS stats;
-  CMR_CALL( CMRstatsSeriesParallelInit(&stats) );
+  CMR_CALL( CMRspStatsInit(&stats) );
   if (binary)
-    CMR_CALL( CMRtestBinarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions,
+    CMR_CALL( CMRspTestBinary(cmr, matrix, NULL, reductions, &numReductions,
       outputReducedFileName ? &reducedSubmatrix : NULL, outputSubmatrixFileName ? &violatorSubmatrix : NULL, &stats,
       timeLimit) );
   else
-    CMR_CALL( CMRtestTernarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions,
+    CMR_CALL( CMRspTestTernary(cmr, matrix, NULL, reductions, &numReductions,
       outputReducedFileName ? &reducedSubmatrix : NULL, outputSubmatrixFileName ? &violatorSubmatrix : NULL, &stats,
       timeLimit) );
 
-  fprintf(stderr, "Matrix %sseries-parallel. %ld reductions can be applied.\n",
+  fprintf(stderr, "Matrix %sseries-parallel. %zu reductions can be applied.\n",
     numReductions == matrix->numRows + matrix->numColumns ? "IS " : "is NOT ", numReductions);
   if (printStats)
-    CMR_CALL( CMRstatsSeriesParallelPrint(stderr, &stats, NULL) );
+    CMR_CALL( CMRspStatsPrint(stderr, &stats, NULL) );
 
   if (outputReductionsFileName)
   {
     bool outputReductionsToFile = strcmp(outputReductionsFileName, "-");
     FILE* outputReductionsFile = outputReductionsToFile ? fopen(outputReductionsFileName, "w") : stdout;
-    fprintf(stderr, "Writing %ld series-parallel reductions to %s%s%s.\n", numReductions,
+    fprintf(stderr, "Writing %zu series-parallel reductions to %s%s%s.\n", numReductions,
       outputReductionsToFile ? "file <" : "", outputReductionsToFile ? outputReductionsFileName : "stdout",
       outputReductionsToFile ? ">" : "");    
 
-    fprintf(outputReductionsFile, "%ld\n", numReductions);
+    fprintf(outputReductionsFile, "%zu\n", numReductions);
     for (size_t i = 0; i < numReductions; ++i)
       fprintf(outputReductionsFile, "%s\n", CMRspReductionString(reductions[i], NULL));
 
@@ -101,7 +102,7 @@ CMR_ERROR recognizeSeriesParallel(
   if (violatorSubmatrix && outputSubmatrixFileName)
   {
     bool outputSubmatrixToFile = strcmp(outputSubmatrixFileName, "-");
-    fprintf(stderr, "Writing minimal non-series-parallel submatrix of order %lu to %s%s%s.\n",
+    fprintf(stderr, "Writing minimal non-series-parallel submatrix of order %zu to %s%s%s.\n",
       violatorSubmatrix->numRows, outputSubmatrixToFile ? "file <" : "",
       outputSubmatrixToFile ? outputSubmatrixFileName : "stdout", outputSubmatrixToFile ? ">" : "");    
 
@@ -120,22 +121,39 @@ CMR_ERROR recognizeSeriesParallel(
   return CMR_OKAY;
 }
 
+/**
+ * \brief Prints the usage of the \p program to stdout.
+ *
+ * \returns \c EXIT_FAILURE.
+ */
+
 int printUsage(const char* program)
 {
   fputs("Usage:\n", stderr);
-  fprintf(stderr, "%s IN-MAT [OPTION]...\n\n", program);
-  fputs("  determines whether the matrix given in file IN-MAT is series-parallel.\n\n", stderr);
+
+  fprintf(stderr, "%s IN-MAT [OPTION]...\n", program);
+  fputs("  determines whether the matrix given in file IN-MAT is series-parallel.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Options:\n", stderr);
-  fputs("  -i FORMAT       Format of file IN-MAT, among `dense' and `sparse'; default: dense.\n", stderr);
-  fputs("  -S OUT-SP       Write the list of series-parallel reductions to file OUT-SP; default: skip computation.\n", stderr);
+  fputs("  -i FORMAT       Format of file IN-MAT; default: dense.\n", stderr);
+  fputs("  -S OUT-SP       Write the list of series-parallel reductions to file OUT-SP; default: skip computation.\n",
+    stderr);
   fputs("  -R OUT-REDUCED  Write the reduced submatrix to file `OUT-REDUCED`; default: skip computation.\n", stderr);
-  fputs("  -N NON-SUB      Write a minimal non-series-parallel submatrix to file `NON-SUB`; default: skip computation.\n", stderr);
+  fputs("  -N NON-SUB      Write a minimal non-series-parallel submatrix to file `NON-SUB`; default: skip"
+    " computation.\n", stderr);
   fputs("  -b              Test for being binary series-parallel; default: ternary.\n", stderr);
-  fputs("  -s`             Print statistics about the computation to stderr.\n\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Advanced options:\n", stderr);
-  fputs("  --time-limit LIMIT   Allow at most LIMIT seconds for the computation.\n\n", stderr);
+  fputs("  --stats            Print statistics about the computation to stderr.\n", stderr);
+  fputs("  --time-limit LIMIT Allow at most LIMIT seconds for the computation.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Formats for matrices: dense, sparse\n", stderr);
   fputs("If IN-MAT is `-' then the matrix is read from stdin.\n", stderr);
-  fputs("If OUT-SP, OUT-REDUCED or NON-SUB is `-' then the list of reductions (resp. the submatrix) is written to stdout.\n", stderr);
+  fputs("If OUT-SP, OUT-REDUCED or NON-SUB is `-' then the list of reductions (resp. the submatrix) is written to"
+    " stdout.\n", stderr);
 
   return EXIT_FAILURE;
 }
@@ -178,7 +196,7 @@ int main(int argc, char** argv)
       outputSubmatrixFileName = argv[++a];
     else if (!strcmp(argv[a], "-b"))
       binary = true;
-    else if (!strcmp(argv[a], "-s"))
+    else if (!strcmp(argv[a], "--stats"))
       printStats = true;
     else if (!strcmp(argv[a], "--time-limit") && (a+1 < argc))
     {

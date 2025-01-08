@@ -22,6 +22,7 @@
 #include <cmr/camion.h>
 
 #include <stdio.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,7 +34,7 @@ extern "C" {
 
 typedef struct
 {
-  size_t totalCount;              /**< Total number of invocations. */
+  uint32_t totalCount;            /**< Total number of invocations. */
   double totalTime;               /**< Total time of all invocations. */
   CMR_CAMION_STATISTICS camion;   /**< Camion signing. */
   CMR_GRAPHIC_STATISTICS graphic; /**< Graphicness test. */
@@ -44,7 +45,7 @@ typedef struct
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsNetworkInit(
+CMR_ERROR CMRnetworkStatsInit(
   CMR_NETWORK_STATISTICS* stats /**< Pointer to statistics. */
 );
 
@@ -53,7 +54,7 @@ CMR_ERROR CMRstatsNetworkInit(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsNetworkPrint(
+CMR_ERROR CMRnetworkStatsPrint(
   FILE* stream,                   /**< File stream to print to. */
   CMR_NETWORK_STATISTICS* stats,  /**< Pointer to statistics. */
   const char* prefix              /**< Prefix string to prepend to each printed line (may be \c NULL). */
@@ -74,7 +75,7 @@ CMR_ERROR CMRstatsNetworkPrint(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRcomputeNetworkMatrix(
+CMR_ERROR CMRnetworkComputeMatrix(
   CMR* cmr,                       /**< \ref CMR environment. */
   CMR_GRAPH* digraph,             /**< Digraph \f$ D = (V,A) \f$. */
   CMR_CHRMAT** pmatrix,           /**< Pointer for storing \f$ M \f$ (may be \c NULL). */
@@ -94,10 +95,10 @@ CMR_ERROR CMRcomputeNetworkMatrix(
  * \brief Tests a matrix \f$ M \f$ for being a [network matrix](\ref network).
  *
  * Tests if \f$ M = M(D,T) \f$ for some digraph \f$ D = (V,A) \f$ and some (directed) spanning forest
- * \f$ T \subseteq A \f$ of \f$ D \f$ and sets \p *pisNetwork accordingly.
+ * \f$ T \subseteq A \f$ of \f$ D \f$ and sets \p *pisNetwork and \p *psupportIsGraphic accordingly.
  *
  * \note If a column-wise representation of \f$ M \f$ is available, it is recommended to call
- *       \ref CMRtestConetworkMatrix() for that. In fact, the implementation explicitly constructs
+ *       \ref CMRnetworkTestTranspose() for that. In fact, the implementation explicitly constructs
  *       \f$ M^{\mathsf{T}} \f$ before calling this function.
  *
  * If \f$ M \f$ is a network matrix and \p pdigraph != \c NULL, then one possible digraph \f$ D \f$ is computed and
@@ -110,10 +111,11 @@ CMR_ERROR CMRcomputeNetworkMatrix(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestNetworkMatrix(
+CMR_ERROR CMRnetworkTestMatrix(
   CMR* cmr,                       /**< \ref CMR environment. */
   CMR_CHRMAT* matrix,             /**< Matrix \f$ M \f$. */
   bool* pisNetwork,               /**< Pointer for storing \c true if and only if \f$ M \f$ is a network matrix. */
+  bool* psupportIsGraphic,        /**< Pointer for storing \c true if and only if the support matrix is graphic. */
   CMR_GRAPH** pdigraph,           /**< Pointer for storing the digraph \f$ D \f$ (if \f$ M \f$ is network). */
   CMR_GRAPH_EDGE** pforestArcs,   /**< Pointer for storing \f$ T \f$, indexed by the rows of \f$ M \f$ (if \f$ M \f$
                                    **  is network).  */
@@ -143,10 +145,11 @@ CMR_ERROR CMRtestNetworkMatrix(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestConetworkMatrix(
+CMR_ERROR CMRnetworkTestTranspose(
   CMR* cmr,                       /**< \ref CMR environment. */
   CMR_CHRMAT* matrix,             /**< Matrix \f$ M \f$. */
   bool* pisConetwork,             /**< Returns true if and only if \f$ M \f$ is a conetwork matrix. */
+  bool* psupportIsCographic,      /**< Pointer for storing \c true if and only if the support matrix is cographic. */
   CMR_GRAPH** pdigraph,           /**< Pointer for storing \c true if and only if \f$ M \f$ is conetwork. */
   CMR_GRAPH_EDGE** pforestArcs,   /**< Pointer for storing \f$ T \f$, indexed by the columns of \f$ M \f$ (if \f$ M \f$
                                    **  is network).  */
@@ -159,8 +162,6 @@ CMR_ERROR CMRtestConetworkMatrix(
   CMR_NETWORK_STATISTICS* stats,  /**< Pointer to statistics (may be \c NULL). */
   double timeLimit                /**< Time limit to impose. */
 );
-
-/**@}*/
 
 #ifdef __cplusplus
 }
