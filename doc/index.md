@@ -7,13 +7,14 @@ The following matrix classes can be recognized:
   - \ref tu
   - \ref network
   - \ref ctu
-  - \ref k-modular
+  - \ref equimodular
+  - \ref balanced (currently only via enumerative methods)
 
 Moreover, [representation matrices](\ref matroids) for the following matroid classes can be recognized:
 
-  - \ref regular
-  - \ref graphic
-  - \ref series-parallel
+  - [Binary](\ref binary_regular) and [ternary](\ref tu) regular matroids
+  - [Graphic, cographic and planar](\ref graphic) matroids
+  - [Series-parallel](\ref series-parallel) matroids
 
 The following additional functionality is also part of the library:
 
@@ -25,7 +26,6 @@ The library also contains various [instance generators](\ref generators).
 
 The following matrix/matroid classes are **planned**:
 
-  - \ref balanced
   - \ref totally-balanced
   - \ref perfect
   - \ref consecutive-ones
@@ -46,10 +46,11 @@ Changes and bug fixes are listed [here](\ref changes).
 The software is released under the [MIT License](https://en.wikipedia.org/wiki/MIT_License).
 Please cite the paper(s) corresponding to the respective tools.
 
-# Authors #
+# Authors # {#authors}
 
-- [Rolf van der Hulst](https://people.utwente.nl/r.p.vanderhulst)
-- [Klaus Truemper](https://personal.utdallas.edu/~klaus/)
+- [Rolf van der Hulst](https://people.utwente.nl/r.p.vanderhulst) (graphicness, network matrices)
+- Henk Kraaij (balancedness)
+- [Klaus Truemper](https://personal.utdallas.edu/~klaus/) (total unimodularity, regularity, complement total unimodularity)
 - [Matthias Walter](https://people.utwente.nl/m.walter) (maintainer)
 
 # Funding support 

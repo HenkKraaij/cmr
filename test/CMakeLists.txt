@@ -9,12 +9,15 @@ endif()
 # Target for the googletest.
 add_executable(cmr_gtest
   common.c
+  test_balanced.cpp
   test_camion.cpp
   test_ctu.cpp
+  test_equimodular.cpp
   test_graph.cpp
   test_graphic.cpp
   test_hashtable.cpp
   test_matrix.cpp
+  test_matroid.cpp
   test_main.cpp
   test_network.cpp
   test_regular.cpp
@@ -22,11 +25,14 @@ add_executable(cmr_gtest
   test_series_parallel.cpp
   test_tu.cpp)
 
+# Set standard to C++ 14.
+set_property(TARGET cmr_gtest PROPERTY CXX_STANDARD 14)
+
 # Add tests for non-exported functions only for static library.
 if(NOT SHARED)
   target_sources(cmr_gtest
     PRIVATE
-    test_one_sum.cpp
+    test_block_decomposition.cpp
     )
   target_include_directories(cmr_gtest
     PRIVATE

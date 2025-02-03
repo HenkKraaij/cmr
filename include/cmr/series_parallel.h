@@ -23,13 +23,13 @@ extern "C" {
 
 typedef struct
 {
-  size_t totalCount;      /**< Total number of invocations. */
+  uint32_t totalCount;      /**< Total number of invocations. */
   double totalTime;       /**< Total time of all invocations. */
-  size_t reduceCount;     /**< Number of calls to reduction algorithm. */
+  uint32_t reduceCount;     /**< Number of calls to reduction algorithm. */
   double reduceTime;      /**< Time of reduction algorithm calls. */
-  size_t wheelCount;      /**< Number of wheel matrix searches. */
+  uint32_t wheelCount;      /**< Number of wheel matrix searches. */
   double wheelTime;       /**< Time of wheel matrix searches. */
-  size_t nonbinaryCount;  /**< Number of searches for \f$ M_2 \f$ matrix. */
+  uint32_t nonbinaryCount;  /**< Number of searches for \f$ M_2 \f$ matrix. */
   double nonbinaryTime;   /**< Time of searches for \f$ M_2 \f$ matrix. */
 } CMR_SP_STATISTICS;
 
@@ -38,7 +38,7 @@ typedef struct
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsSeriesParallelInit(
+CMR_ERROR CMRspStatsInit(
   CMR_SP_STATISTICS* stats /**< Pointer to statistics. */
 );
 
@@ -47,7 +47,7 @@ CMR_ERROR CMRstatsSeriesParallelInit(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsSeriesParallelPrint(
+CMR_ERROR CMRspStatsPrint(
   FILE* stream,             /**< File stream to print to. */
   CMR_SP_STATISTICS* stats, /**< Pointer to statistics. */
   const char* prefix        /**< Prefix string to prepend to each printed line (may be \c NULL). */
@@ -153,7 +153,8 @@ bool CMRspIsValid(
  *
  * Let \f$ A \in \{-1,0,1\}^{m \times n} \f$ with \f$ k \f$ nonzeros.
  *
- * If \p premainingSubmatrix is not \c NULL, then the SP-reduced submatrix is stored.
+ * Denote by \f$ A' \f$ the (maximum) SP-reduced submatrix of \f$ A \f$.
+ * If \p premainingSubmatrix is not \c NULL, then the rows and columns of \f$ A' \f$ are stored.
  *
  * If \p pviolatorSubmatrix is not \c NULL and \p matrix is not binary series-parallel, then a wheel-submatrix is
  * stored.
@@ -162,7 +163,7 @@ bool CMRspIsValid(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestBinarySeriesParallel(
+CMR_ERROR CMRspTestBinary(
   CMR* cmr,                         /**< \ref CMR environment. */
   CMR_CHRMAT* matrix,               /**< Sparse char matrix. */
   bool* pisSeriesParallel,          /**< Pointer for storing the result. */
@@ -180,7 +181,8 @@ CMR_ERROR CMRtestBinarySeriesParallel(
  *
  * Let \f$ A \in \{-1,0,+1\}^{m \times n} \f$ with \f$ k \f$ nonzeros.
  *
- * If \p premainingSubmatrix is not \c NULL, then the SP-reduced submatrix is stored.
+ * Denote by \f$ A' \f$ the (maximum) SP-reduced submatrix of \f$ A \f$.
+ * If \p premainingSubmatrix is not \c NULL, then the rows and columns of \f$ A' \f$ are stored.
  *
  * If \p pviolatorSubmatrix is not \c NULL and \p matrix is not ternary series-parallel, then a signed wheel- or
  * \f$ M_2 \f$-submatrix is stored.
@@ -189,7 +191,7 @@ CMR_ERROR CMRtestBinarySeriesParallel(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestTernarySeriesParallel(
+CMR_ERROR CMRspTestTernary(
   CMR* cmr,                         /**< \ref CMR environment. */
   CMR_CHRMAT* matrix,               /**< Sparse char matrix. */
   bool* pisSeriesParallel,          /**< Pointer for storing the result. */
@@ -207,20 +209,21 @@ CMR_ERROR CMRtestTernarySeriesParallel(
  *
  * Let \f$ A \in \{0,1\}^{m \times n} \f$ with \f$ k \f$ nonzeros.
  *
- * If \p premainingSubmatrix is not \c NULL, then the SP-reduced submatrix is stored.
+ * Denote by \f$ A' \f$ the (maximum) SP-reduced submatrix of \f$ A \f$.
+ * If \p premainingSubmatrix is not \c NULL, then the rows and columns of \f$ A' \f$ are stored.
  *
  * If \p pviolatorSubmatrix is not \c NULL and \p matrix is not binary series-parallel, then a wheel-submatrix is
- * stored (unless a 2-separation is found; see below).
+ * stored (unless a 2-separation is found; see below). Note that the row/column indices refer to \f$ A \f$.
  *
  * If \p pseparation is not \c NULL and during the search for a wheel-submatrix a 2-separation that does not correspond
  * to an SP reduction is found then such a 2-separation is returned and the algorithm terminates without returning a
- * wheel-submatrix.
+ * wheel-submatrix. Note that \p *pseparation then contains row/column indices relative to \f$ A' \f$.
  *
  * The running time is \f$ \mathcal{O} (m + n + k) \f$ assuming no hashtable collisions.
  */
 
 CMR_EXPORT
-CMR_ERROR CMRdecomposeBinarySeriesParallel(
+CMR_ERROR CMRspDecomposeBinary(
   CMR* cmr,                         /**< \ref CMR environment. */
   CMR_CHRMAT* matrix,               /**< Sparse char matrix. */
   bool* pisSeriesParallel,          /**< Pointer for storing the result. */
@@ -242,16 +245,17 @@ CMR_ERROR CMRdecomposeBinarySeriesParallel(
  *
  * Let \f$ A \in \{-1,0,+1\}^{m \times n} \f$ with \f$ k \f$ nonzeros.
  *
- * If \p premainingSubmatrix is not \c NULL, then the SP-reduced submatrix is stored.
+ * Denote by \f$ A' \f$ the (maximum) SP-reduced submatrix of \f$ A \f$.
+ * If \p premainingSubmatrix is not \c NULL, then the rows and columns of \f$ A' \f$ are stored.
  *
  * If \p pviolatorSubmatrix is not \c NULL and \p matrix is not ternary series-parallel, then a signed wheel- or
- * \f$ M_2 \f$-submatrix is stored (unless a 2-separation is found; see below).
+ * \f$ M_2 \f$-submatrix is stored (unless a 2-separation is found; see below). Note that the row/column indices refer
+ * to \f$ A \f$.
  *
  * If \p pseparation is not \c NULL and during the search for a signed wheel-submatrix a 2-separation that does not
  * correspond to an SP reduction is found then such a 2-separation is returned and the algorithm terminates without
- * returning a signed wheel- or \f$ M_2 \f$-submatrix.
- *
- * \note \p *pviolatorSubmatrix and \p *pseparation refer to \f$ A \f$ and not to the
+ * returning a signed wheel- or \f$ M_2 \f$-submatrix. Note that \p *pseparation then contains row/column indices
+ * relative to \f$ A' \f$.
  *
  * The running time is \f$ \mathcal{O} (m + n + k) \f$ assuming no hashtable collisions.
  *
@@ -259,7 +263,7 @@ CMR_ERROR CMRdecomposeBinarySeriesParallel(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRdecomposeTernarySeriesParallel(
+CMR_ERROR CMRspDecomposeTernary(
   CMR* cmr,                         /**< \ref CMR environment. */
   CMR_CHRMAT* matrix,               /**< Sparse char matrix. */
   bool* pisSeriesParallel,          /**< Pointer for storing the result. */

@@ -31,14 +31,27 @@ size_t randRange(size_t first, size_t beyond)
   return first + x / representatives;
 }
 
+/**
+ * \brief Prints the usage of the \p program to stdout.
+ *
+ * \returns \c EXIT_FAILURE.
+ */
+
 int printUsage(const char* program)
 {
-  printf("Usage: %s [OPTIONS] ROWS COLS\n\n", program);
-  puts("Creates a random ROWS-by-COLS 0/1 graphic matrix.\n");
-  puts("Options:\n");
-  puts("  -B NUM     Benchmarks the recognition algorithm for the created matrix with NUM repetitions.\n");
-  puts("  -o FORMAT  Format of output FILE; default: `dense'.");
-  puts("Formats for matrices: dense, sparse");
+  fputs("Usage:\n", stderr);
+
+  fprintf(stderr, "%s ROWS COLS [OPTION]...\n", program);
+  fputs("  creates a random ROWS-by-COLS 0/1 graphic matrix and writes it to stdout.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Options:\n", stderr);
+  fputs("  -B NUM     Benchmarks the recognition algorithm for the created matrix with NUM repetitions.\n", stderr);
+  fputs("  -o FORMAT  Format of output matrix; default: dense.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Formats for matrices: dense, sparse\n", stderr);
+
   return EXIT_FAILURE;
 }
 
@@ -62,7 +75,7 @@ CMR_ERROR genMatrixGraphic(
   size_t numNodes = numRows + 1;
   size_t numEdges = numColumns;
   CMR_GRAPHIC_STATISTICS stats;
-  CMR_CALL( CMRstatsGraphicInit(&stats) );
+  CMR_CALL( CMRgraphicStatsInit(&stats) );
   for (size_t benchmark = benchmarkRepetitions ? benchmarkRepetitions : 1; benchmark > 0; --benchmark)
   {
     clock_t startTime = clock();
@@ -83,7 +96,7 @@ CMR_ERROR genMatrixGraphic(
     CMR_CALL( CMRallocBlockArray(cmr, &treeDistance, numNodes) );
     nextTreeNode[0] = 0;
     treeDistance[0] = 0;
-    for (int v = 1; v < numNodes; ++v)
+    for (int v = 1; v < (int) numNodes; ++v)
     {
       int w = (int)(rand() * 1.0 * v / RAND_MAX);
       nextTreeNode[v] = w;
@@ -92,7 +105,7 @@ CMR_ERROR genMatrixGraphic(
 
     size_t* columnNonzeros = NULL;
     CMR_CALL( CMRallocBlockArray(cmr, &columnNonzeros, numNodes - 1) );
-    for (int e = 0; e < numEdges; ++e)
+    for (int e = 0; e < (int)numEdges; ++e)
     {
       size_t numColumNonzeros = 0;
       int first = (int)(rand() * 1.0 * numNodes / RAND_MAX);
@@ -146,12 +159,12 @@ CMR_ERROR genMatrixGraphic(
     {
       /* Benchmark */      
       bool isGraphic;
-      CMR_CALL( CMRtestGraphicMatrix(cmr, matrix, &isGraphic, NULL, NULL, NULL, NULL, &stats, DBL_MAX) );
+      CMR_CALL( CMRgraphicTestMatrix(cmr, matrix, &isGraphic, NULL, NULL, NULL, NULL, &stats, DBL_MAX) );
     }
     else
     {
       double generationTime = (clock() - startTime) * 1.0 / CLOCKS_PER_SEC;
-      fprintf(stderr, "Generated a %ldx%ld matrix with %ld nonzeros in %f seconds.\n", numRows, numColumns,
+      fprintf(stderr, "Generated a %zux%zu matrix with %zu nonzeros in %f seconds.\n", numRows, numColumns,
         matrix->numNonzeros, generationTime);
 
       /* Print matrix. */
@@ -166,7 +179,7 @@ CMR_ERROR genMatrixGraphic(
   }
 
   if (benchmarkRepetitions)
-    CMR_CALL( CMRstatsGraphicPrint(stderr, &stats, NULL) );
+    CMR_CALL( CMRgraphicStatsPrint(stderr, &stats, NULL) );
 
   CMR_CALL( CMRfreeEnvironment(&cmr) );
 
@@ -196,7 +209,7 @@ int main(int argc, char** argv)
       benchmarkRepetitions = strtoull(argv[a+1], &p, 10);
       if (*p != '\0' || benchmarkRepetitions == 0)
       {
-        printf("Error: invalid number of benchmark repetitions <%s>", argv[a+1]);
+        fprintf(stderr, "Error: invalid number of benchmark repetitions <%s>", argv[a+1]);
         printUsage(argv[0]);
         return EXIT_FAILURE;
       }
@@ -210,7 +223,7 @@ int main(int argc, char** argv)
         outputFormat = FILEFORMAT_MATRIX_SPARSE;
       else
       {
-        printf("Error: unknown output format <%s>.\n\n", argv[a+1]);
+        fprintf(stderr, "Error: unknown output format <%s>.\n\n", argv[a+1]);
         return printUsage(argv[0]);
       }
       ++a;
@@ -221,6 +234,7 @@ int main(int argc, char** argv)
       numRows = strtoull(argv[a], &p, 10);
       if (*p != '\0')
       {
+        fprintf(stderr, "Error: invalid number of rows <%s>.\n\n", argv[a]);
         printUsage(argv[0]);
         return EXIT_FAILURE;
       }
@@ -231,30 +245,31 @@ int main(int argc, char** argv)
       numColumns = strtoull(argv[a], &p, 10);
       if (*p != '\0')
       {
+        fprintf(stderr, "Error: invalid number of columns <%s>.\n\n", argv[a]);
         printUsage(argv[0]);
         return EXIT_FAILURE;
       }
     }
     else
     {
-      printf("Error: more than two size indicators specified: %ld %ld %s\n\n", numRows, numColumns, argv[a]);
+      fprintf(stderr, "Error: more than two size indicators specified: %zu %zu %s\n\n", numRows, numColumns, argv[a]);
       return printUsage(argv[0]);
     }
   }
 
   if (numRows == SIZE_MAX)
   {
-    puts("Error: no size indicator specified.\n");
+    fputs("Error: no size indicator specified.\n", stderr);
     return printUsage(argv[0]);
   }
   else if (numColumns == SIZE_MAX)
   {
-    puts("Error: only one size indicator specified.\n");
+    fputs("Error: only one size indicator specified.\n", stderr);
     return printUsage(argv[0]);
   }
   else if (numRows <= 0 || numColumns <= 0)
   {
-    puts("Error: matrix must have at least 1 row and 1 column.\n");
+    fputs("Error: matrix must have at least 1 row and 1 column.\n", stderr);
     return printUsage(argv[0]);
   }
   if (outputFormat == FILEFORMAT_UNDEFINED)
@@ -264,10 +279,10 @@ int main(int argc, char** argv)
   switch (error)
   {
   case CMR_ERROR_INPUT:
-    puts("Input error.");
+    fputs("Input error.\n", stderr);
     return EXIT_FAILURE;
   case CMR_ERROR_MEMORY:
-    puts("Memory error.");
+    fputs("Memory error.\n", stderr);
     return EXIT_FAILURE;
   default:
     return EXIT_SUCCESS;

@@ -6,7 +6,7 @@
 
 #include "env_internal.h"
 #include "matrix_internal.h"
-#include "one_sum.h"
+#include "block_decomposition.h"
 #include "heap.h"
 #include "sort.h"
 #include "hereditary_property.h"
@@ -26,7 +26,7 @@
   } \
   while (false)
 
-CMR_ERROR CMRstatsGraphicInit(CMR_GRAPHIC_STATISTICS* stats)
+CMR_ERROR CMRgraphicStatsInit(CMR_GRAPHIC_STATISTICS* stats)
 {
   assert(stats);
 
@@ -42,7 +42,7 @@ CMR_ERROR CMRstatsGraphicInit(CMR_GRAPHIC_STATISTICS* stats)
   return CMR_OKAY;
 }
 
-CMR_ERROR CMRstatsGraphicPrint(FILE* stream, CMR_GRAPHIC_STATISTICS* stats, const char* prefix)
+CMR_ERROR CMRgraphicStatsPrint(FILE* stream, CMR_GRAPHIC_STATISTICS* stats, const char* prefix)
 {
   assert(stream);
   assert(stats);
@@ -52,10 +52,12 @@ CMR_ERROR CMRstatsGraphicPrint(FILE* stream, CMR_GRAPHIC_STATISTICS* stats, cons
     fprintf(stream, "Graphicness recognition:\n");
     prefix = "  ";
   }
-  fprintf(stream, "%stranspositions: %ld in %f seconds\n", prefix, stats->transposeCount, stats->transposeTime);
-  fprintf(stream, "%scolumn checks: %ld in %f seconds\n", prefix, stats->checkCount, stats->checkTime);
-  fprintf(stream, "%scolumn additions: %ld in %f seconds\n", prefix, stats->applyCount, stats->applyTime);
-  fprintf(stream, "%stotal: %ld in %f seconds\n", prefix, stats->totalCount, stats->totalTime);
+  fprintf(stream, "%stranspositions: %lu in %f seconds\n", prefix, (unsigned long)stats->transposeCount,
+    stats->transposeTime);
+  fprintf(stream, "%scolumn checks: %lu in %f seconds\n", prefix, (unsigned long)stats->checkCount, stats->checkTime);
+  fprintf(stream, "%scolumn additions: %lu in %f seconds\n", prefix, (unsigned long)stats->applyCount,
+    stats->applyTime);
+  fprintf(stream, "%stotal: %lu in %f seconds\n", prefix, (unsigned long)stats->totalCount, stats->totalTime);
 
   return CMR_OKAY;
 }
@@ -88,7 +90,7 @@ CMR_ERROR CMRcomputeRepresentationMatrix(CMR* cmr, CMR_GRAPH* digraph, bool tern
   assert(digraph);
   assert(ptranspose && !*ptranspose);
   assert(numForestArcs == 0 || forestArcs);
-  assert(numForestArcs == 0 || coforestArcs);
+  assert(numCoforestArcs == 0 || coforestArcs);
   CMRassertStackConsistency(cmr);
 
   CMRdbgMsg(0, "Computing %s representation matrix.\n", ternary ? "ternary" : "binary");
@@ -342,8 +344,9 @@ CMR_ERROR CMRcomputeRepresentationMatrix(CMR* cmr, CMR_GRAPH* digraph, bool tern
     ++numColumns;
   }
   transpose->rowSlice[numColumns] = numNonzeros;
+  transpose->numNonzeros = numNonzeros;
 
-  CMRchrmatSortNonzeros(cmr, transpose);
+  CMR_CALL( CMRchrmatSortNonzeros(cmr, transpose) );
 
   CMRassertStackConsistency(cmr);
 
@@ -351,7 +354,6 @@ CMR_ERROR CMRcomputeRepresentationMatrix(CMR* cmr, CMR_GRAPH* digraph, bool tern
   CMR_CALL( CMRfreeStackArray(cmr, &uPath) );
   CMR_CALL( CMRfreeStackArray(cmr, &edgeColumns) );
 
-  transpose->rowSlice[numColumns] = numNonzeros;
   if (numNonzeros == 0 && transpose->numNonzeros > 0)
   {
     CMR_CALL( CMRfreeBlockArray(cmr, &transpose->entryColumns) );
@@ -373,7 +375,7 @@ CMR_ERROR CMRcomputeRepresentationMatrix(CMR* cmr, CMR_GRAPH* digraph, bool tern
   return CMR_OKAY;
 }
 
-CMR_ERROR CMRcomputeGraphicMatrix(CMR* cmr, CMR_GRAPH* graph, CMR_CHRMAT** pmatrix, CMR_CHRMAT** ptranspose,
+CMR_ERROR CMRgraphicComputeMatrix(CMR* cmr, CMR_GRAPH* graph, CMR_CHRMAT** pmatrix, CMR_CHRMAT** ptranspose,
   int numForestEdges, CMR_GRAPH_EDGE* forestEdges, int numCoforestEdges, CMR_GRAPH_EDGE* coforestEdges,
   bool* pisCorrectForest)
 {
@@ -1634,32 +1636,32 @@ void edgeToDot(
   const char* redStyle = red ? ",color=red" : "";
   if (dec->members[member].markerToParent == edge)
   {
-    fprintf(stream, "    %c_%ld_%d -- %c_p_%ld [label=\"%ld\",style=dashed%s];\n", type, member, u, type, member, edge, redStyle);
-    fprintf(stream, "    %c_p_%ld -- %c_%ld_%d [label=\"%ld\",style=dashed%s];\n", type, member, type, member, v, edge, redStyle);
-    fprintf(stream, "    %c_%ld_%d [shape=box];\n", type, member, u);
-    fprintf(stream, "    %c_%ld_%d [shape=box];\n", type, member, v);
-    fprintf(stream, "    %c_p_%ld [style=dashed];\n", type, member);
+    fprintf(stream, "    %c_%zu_%d -- %c_p_%zu [label=\"%zu\",style=dashed%s];\n", type, member, u, type, member, edge, redStyle);
+    fprintf(stream, "    %c_p_%zu -- %c_%zu_%d [label=\"%zu\",style=dashed%s];\n", type, member, type, member, v, edge, redStyle);
+    fprintf(stream, "    %c_%zu_%d [shape=box];\n", type, member, u);
+    fprintf(stream, "    %c_%zu_%d [shape=box];\n", type, member, v);
+    fprintf(stream, "    %c_p_%zu [style=dashed];\n", type, member);
   }
   else if (dec->edges[edge].childMember != SIZE_MAX)
   {
     DEC_MEMBER child = findMember(dec, dec->edges[edge].childMember);
     char childType = (dec->members[child].type == DEC_MEMBER_TYPE_PARALLEL) ?
       'P' : (dec->members[child].type == DEC_MEMBER_TYPE_SERIES ? 'S' : 'R');
-    fprintf(stream, "    %c_%ld_%d -- %c_c_%ld [label=\"%ld\",style=dotted%s];\n", type, member, u, type, child, edge, redStyle);
-    fprintf(stream, "    %c_c_%ld -- %c_%ld_%d [label=\"%ld\",style=dotted%s];\n", type, child, type, member, v, edge, redStyle);
-    fprintf(stream, "    %c_%ld_%d [shape=box];\n", type, member, u);
-    fprintf(stream, "    %c_%ld_%d [shape=box];\n", type, member, v);
-    fprintf(stream, "    %c_c_%ld [style=dotted];\n", type, child);
+    fprintf(stream, "    %c_%zu_%d -- %c_c_%zu [label=\"%zu\",style=dotted%s];\n", type, member, u, type, child, edge, redStyle);
+    fprintf(stream, "    %c_c_%zu -- %c_%zu_%d [label=\"%zu\",style=dotted%s];\n", type, child, type, member, v, edge, redStyle);
+    fprintf(stream, "    %c_%zu_%d [shape=box];\n", type, member, u);
+    fprintf(stream, "    %c_%zu_%d [shape=box];\n", type, member, v);
+    fprintf(stream, "    %c_c_%zu [style=dotted];\n", type, child);
 
-    fprintf(stream, "    %c_p_%ld -- %c_c_%ld [style=dashed,dir=forward];\n", childType, child, type, child);
+    fprintf(stream, "    %c_p_%zu -- %c_c_%zu [style=dashed,dir=forward];\n", childType, child, type, child);
   }
   else
   {
     fflush(stdout);
-    fprintf(stream, "    %c_%ld_%d -- %c_%ld_%d [label=\"%ld <%s>\",style=bold%s];\n", type, member, u, type, member, v,
+    fprintf(stream, "    %c_%zu_%d -- %c_%zu_%d [label=\"%zu <%s>\",style=bold%s];\n", type, member, u, type, member, v,
       edge, CMRelementString(dec->edges[edge].element, NULL), redStyle);
-    fprintf(stream, "    %c_%ld_%d [shape=box];\n", type, member, u);
-    fprintf(stream, "    %c_%ld_%d [shape=box];\n", type, member, v);
+    fprintf(stream, "    %c_%zu_%d [shape=box];\n", type, member, u);
+    fprintf(stream, "    %c_%zu_%d [shape=box];\n", type, member, v);
   }
 }
 
@@ -1684,7 +1686,7 @@ CMR_ERROR CMRdecToDot(
     if (!isRepresentativeMember(dec, member))
       continue;
 
-    fprintf(stream, "  subgraph member%ld {\n", member);
+    fprintf(stream, "  subgraph member%zu {\n", member);
     if (dec->members[member].type == DEC_MEMBER_TYPE_PARALLEL)
     {
       DEC_EDGE edge = dec->members[member].firstEdge;
@@ -1746,6 +1748,9 @@ void debugDot(
   DEC_NEWCOLUMN* newcolumn  /**< new column. */
 )
 {
+  CMR_UNUSED(dec);
+  CMR_UNUSED(newcolumn);
+
   assert(dec);
   assert(newcolumn || !newcolumn);
 
@@ -2567,22 +2572,20 @@ static
 CMR_ERROR determineTypeParallel(
   Dec* dec,                           /**< Decomposition. */
   DEC_NEWCOLUMN* newcolumn,           /**< newcolumn. */
-  ReducedComponent* reducedComponent, /**< Reduced component. */
   ReducedMember* reducedMember,       /**< Reduced member. */
   int numOneEnd,                      /**< Number of child markers containing one path end. */
   int numTwoEnds,                     /**< Number of child markers containing two path ends. */
-  DEC_EDGE childMarkerEdges[2],       /**< Marker edges of children containing one/two path ends. */
   int depth                           /**< Depth of member in reduced decomposition. */
 )
 {
+  CMR_UNUSED(dec);
+
   assert(dec);
   assert(newcolumn);
-  assert(reducedComponent);
   assert(reducedMember);
   assert(numOneEnd >= 0);
   assert(numTwoEnds >= 0);
   assert(numOneEnd + 2*numTwoEnds <= 2);
-  assert(childMarkerEdges);
   assert(dec->members[findMember(dec, reducedMember->member)].type == DEC_MEMBER_TYPE_PARALLEL);
 
   if (depth == 0)
@@ -2625,22 +2628,18 @@ static
 CMR_ERROR determineTypeSeries(
   Dec* dec,                           /**< Decomposition. */
   DEC_NEWCOLUMN* newcolumn,           /**< newcolumn. */
-  ReducedComponent* reducedComponent, /**< Reduced component. */
   ReducedMember* reducedMember,       /**< Reduced member. */
   int numOneEnd,                      /**< Number of child markers containing one path end. */
   int numTwoEnds,                     /**< Number of child markers containing two path ends. */
-  DEC_EDGE childMarkerEdges[2],       /**< Marker edges of children containing one/two path ends. */
   int depth                           /**< Depth of member in reduced t-decomposition. */
 )
 {
   assert(dec);
   assert(newcolumn);
-  assert(reducedComponent);
   assert(reducedMember);
   assert(numOneEnd >= 0);
   assert(numTwoEnds >= 0);
   assert(numOneEnd + 2*numTwoEnds <= 2);
-  assert(childMarkerEdges);
   assert(dec->members[findMember(dec, reducedMember->member)].type == DEC_MEMBER_TYPE_SERIES);
 
   DEC_MEMBER member = findMember(dec, reducedMember->member);
@@ -2705,7 +2704,6 @@ static
 CMR_ERROR determineTypeRigid(
   Dec* dec,                           /**< Decomposition. */
   DEC_NEWCOLUMN* newcolumn,           /**< newcolumn. */
-  ReducedComponent* reducedComponent, /**< Reduced component. */
   ReducedMember* reducedMember,       /**< Reduced member. */
   int numOneEnd,                      /**< Number of child markers containing one path end. */
   int numTwoEnds,                     /**< Number of child markers containing two path ends. */
@@ -2715,7 +2713,6 @@ CMR_ERROR determineTypeRigid(
 {
   assert(dec);
   assert(newcolumn);
-  assert(reducedComponent);
   assert(reducedMember);
   assert(numOneEnd >= 0);
   assert(numTwoEnds >= 0);
@@ -3336,18 +3333,16 @@ CMR_ERROR determineTypes(
   DEC_MEMBER member = findMember(dec, reducedMember->member);
   if (dec->members[member].type == DEC_MEMBER_TYPE_PARALLEL)
   {
-    CMR_CALL( determineTypeParallel(dec, newcolumn, reducedComponent, reducedMember, numOneEnd, numTwoEnds,
-      childMarkerEdges, depth) );
+    CMR_CALL( determineTypeParallel(dec, newcolumn, reducedMember, numOneEnd, numTwoEnds, depth) );
   }
   else if (dec->members[member].type == DEC_MEMBER_TYPE_SERIES)
   {
-    CMR_CALL( determineTypeSeries(dec, newcolumn, reducedComponent, reducedMember, numOneEnd, numTwoEnds,
-      childMarkerEdges, depth) );
+    CMR_CALL( determineTypeSeries(dec, newcolumn, reducedMember, numOneEnd, numTwoEnds, depth) );
   }
   else
   {
     assert(dec->members[member].type == DEC_MEMBER_TYPE_RIGID);
-    CMR_CALL( determineTypeRigid(dec, newcolumn, reducedComponent, reducedMember, numOneEnd, numTwoEnds,
+    CMR_CALL( determineTypeRigid(dec, newcolumn, reducedMember, numOneEnd, numTwoEnds,
       childMarkerEdges, depth) );
   }
 
@@ -3486,6 +3481,8 @@ CMR_ERROR addTerminal(
   DEC_NODE node                       /**< New terminal node. */
 )
 {
+  CMR_UNUSED(dec);
+
   assert(reducedComponent);
   assert(member != SIZE_MAX);
   assert(isRepresentativeMember(dec, member));
@@ -5201,11 +5198,17 @@ CMR_ERROR cographicnessTest(
   double timeLimit          /**< Time limit to impose. */
 )
 {
+  CMR_UNUSED(cmr);
+  CMR_UNUSED(data);
+
   assert(cmr);
   assert(matrix);
   assert(!data);
   assert(pisCographic);
   assert(!psubmatrix || !*psubmatrix);
+
+  /* TODO: Algorithm for finding a bad minor. */
+  CMR_UNUSED(psubmatrix);
 
 #if defined(CMR_DEBUG)
   CMRdbgMsg(0, "cographicnessTest called for a %dx%d matrix\n", matrix->numRows, matrix->numColumns);
@@ -5254,7 +5257,7 @@ CMR_ERROR cographicnessTest(
   return CMR_OKAY;
 }
 
-CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographic, CMR_GRAPH** pgraph,
+CMR_ERROR CMRcographicTestSupport(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographic, CMR_GRAPH** pgraph,
   CMR_GRAPH_EDGE** pforestEdges, CMR_GRAPH_EDGE** pcoforestEdges, CMR_SUBMAT** psubmatrix,
   CMR_GRAPHIC_STATISTICS* stats, double timeLimit)
 {
@@ -5266,11 +5269,11 @@ CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographi
   assert(pisCographic);
 
 #if defined(CMR_DEBUG)
-  CMRdbgMsg(0, "CMRtestCographicMatrix called for a %dx%d matrix\n", matrix->numRows, matrix->numColumns);
+  CMRdbgMsg(0, "CMRgraphicTestTranspose called for a %zux%zu matrix.\n", matrix->numRows, matrix->numColumns);
   CMRchrmatPrintDense(cmr, matrix, stdout, '0', true);
 #endif /* CMR_DEBUG */
 
-  clock_t time = clock();
+  clock_t totalClock = clock();
   *pisCographic = true;
 
   Dec* dec = NULL;
@@ -5284,7 +5287,7 @@ CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographi
     for (size_t column = 0; column < matrix->numRows && *pisCographic; ++column)
     {
       clock_t checkClock = clock();
-      double remainingTime = timeLimit - (checkClock - time) * 1.0 / CLOCKS_PER_SEC;
+      double remainingTime = timeLimit - (checkClock - totalClock) * 1.0 / CLOCKS_PER_SEC;
       if (remainingTime < 0)
       {
         CMR_CALL( newcolumnFree(cmr, &newcolumn) );
@@ -5423,18 +5426,46 @@ CMR_ERROR CMRtestCographicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographi
   if (dec)
     CMR_CALL( decFree(&dec) );
 
+  CMR_ERROR error = CMR_OKAY;
   if (!*pisCographic && psubmatrix)
   {
     /* Find submatrix. */
-    double remainingTime = timeLimit - (clock() - time) * 1.0 / CLOCKS_PER_SEC;
-    CMR_CALL( CMRtestHereditaryPropertySimple(cmr, matrix, cographicnessTest, NULL, psubmatrix, remainingTime) );
+    double remainingTime = timeLimit - (clock() - totalClock) * 1.0 / CLOCKS_PER_SEC;
+    error = CMRtestHereditaryPropertyGreedy(cmr, matrix, cographicnessTest, NULL, psubmatrix, remainingTime);
+    if (error != CMR_ERROR_TIMEOUT && error != CMR_OKAY)
+      CMR_CALL( error );
   }
 
   if (stats)
   {
     stats->totalCount++;
-    stats->totalTime += (clock() - time) * 1.0 / CLOCKS_PER_SEC;
+    stats->totalTime += (clock() - totalClock) * 1.0 / CLOCKS_PER_SEC;
   }
+
+  return error;
+}
+
+CMR_ERROR CMRgraphicTestTranspose(CMR* cmr, CMR_CHRMAT* matrix, bool* pisCographic, CMR_GRAPH** pgraph,
+  CMR_GRAPH_EDGE** pforestEdges, CMR_GRAPH_EDGE** pcoforestEdges, CMR_SUBMAT** psubmatrix,
+  CMR_GRAPHIC_STATISTICS* stats, double timeLimit)
+{
+  assert(cmr);
+  assert(matrix);
+  assert(pisCographic);
+  assert(!pgraph || !*pgraph);
+  assert(!pforestEdges || pgraph);
+  assert(!pcoforestEdges || pgraph);
+  assert(!psubmatrix || !*psubmatrix);
+
+  if (!CMRchrmatIsBinary(cmr, matrix, psubmatrix))
+  {
+    assert(false);
+    *pisCographic = false;
+    return CMR_OKAY;
+  }
+
+  CMR_CALL( CMRcographicTestSupport(cmr, matrix, pisCographic, pgraph, pforestEdges, pcoforestEdges, psubmatrix, stats,
+    timeLimit) );
 
   return CMR_OKAY;
 }
@@ -5496,7 +5527,7 @@ CMR_ERROR CMRtestBinaryGraphicColumnSubmatrixGreedy(CMR* cmr, CMR_CHRMAT* transp
   return CMR_OKAY;
 }
 
-CMR_ERROR CMRtestGraphicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisGraphic, CMR_GRAPH** pgraph,
+CMR_ERROR CMRgraphicTestMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisGraphic, CMR_GRAPH** pgraph,
   CMR_GRAPH_EDGE** pforestEdges, CMR_GRAPH_EDGE** pcoforestEdges, CMR_SUBMAT** psubmatrix,
   CMR_GRAPHIC_STATISTICS* stats, double timeLimit)
 {
@@ -5508,8 +5539,7 @@ CMR_ERROR CMRtestGraphicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisGraphic, C
   assert(pisGraphic);
 
 #if defined(CMR_DEBUG)
-  CMRdbgMsg(0, "CMRtestGraphicMatrix called for a %dx%d matrix \n", matrix->numRows,
-    matrix->numColumns);
+  CMRdbgMsg(0, "CMRgraphicTestMatrix called for a %zux%zu matrix \n", matrix->numRows, matrix->numColumns);
   CMR_CALL( CMRchrmatPrintDense(cmr, matrix, stdout, '0', true) );
 #endif /* CMR_DEBUG */
 
@@ -5525,10 +5555,10 @@ CMR_ERROR CMRtestGraphicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisGraphic, C
   {
     stats->transposeCount++;
     transposeTime = (clock() - transposeClock) * 1.0 / CLOCKS_PER_SEC;
-    stats->transposeTime += transposeTime;
+    stats->transposeTime -= transposeTime;
   }
 
-  CMR_CALL( CMRtestCographicMatrix(cmr, transpose, pisGraphic, pgraph, pforestEdges, pcoforestEdges, psubmatrix,
+  CMR_CALL( CMRgraphicTestTranspose(cmr, transpose, pisGraphic, pgraph, pforestEdges, pcoforestEdges, psubmatrix,
     stats, timeLimit) );
 
   if (stats)
@@ -5543,4 +5573,3 @@ CMR_ERROR CMRtestGraphicMatrix(CMR* cmr, CMR_CHRMAT* matrix, bool* pisGraphic, C
   return CMR_OKAY;
 }
 
-/**@}*/

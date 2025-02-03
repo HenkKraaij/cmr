@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#define CMR_UNUSED(x) (void)(x)
+#include <cmr/env.h>
 
 #if defined(CMR_DEBUG)
 
@@ -133,14 +133,16 @@ void CMRassertStackConsistency(
   CMR* cmr  /**< \ref CMR environment. */
 )
 {
-
+  CMR_UNUSED(cmr);
+  assert(cmr);
 }
 
 #endif /* !NDEBUG */
 
 void CMRraiseErrorMessage(
-  CMR* cmr,               /**< \ref CMR environment. */
-  const char* format, ... /**< \ref Variadic arguments in printf-style. */
+  CMR* cmr,           /**< \ref CMR environment. */
+  const char* format, /**< Format string in printf-style. */
+  ...                 /**< Variadic arguments. */
 );
 
 size_t CMRgetStackUsage(
@@ -149,7 +151,7 @@ size_t CMRgetStackUsage(
 
 char* CMRconsistencyMessage(const char* format, ...);
 
-#if !defined(NDEBUG)
+#if defined(CMR_DEBUG)
 
 /**
  * \brief Asserts that \p call reports consistency. Otherwise, the inconsistency explanation is printed and the program
@@ -161,7 +163,7 @@ char* CMRconsistencyMessage(const char* format, ...);
  *     CMRconsistencyAssert( CMRchrmatConsistency(matrix) );
  */
 
-#define CMRconsistencyAssert( call ) \
+#define CMRdbgConsistencyAssert( call ) \
   do \
   { \
     char* __message = call; \
@@ -171,14 +173,14 @@ char* CMRconsistencyMessage(const char* format, ...);
       fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, __message); \
       fflush(stderr); \
       free(__message); \
-      exit(1); \
+      assert(!"Consistency assertion raised!"); \
     } \
   } \
   while (false);
 
 #else
 
-#define CMRconsistencyAssert( call )
+#define CMRdbgConsistencyAssert( call )
 
 #endif
 

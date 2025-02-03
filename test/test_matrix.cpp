@@ -12,6 +12,30 @@ TEST(Matrix, Read)
 
   /* Double matrices. */
   {
+    /* Zero matrix. */
+    const char* denseInput = "3 3 "
+      "0 0 0 "
+      "0 0 0 "
+      "0 0 0 ";
+    FILE* stream = fmemopen((char*) denseInput, strlen(denseInput), "r");
+    CMR_DBLMAT* dense = NULL;
+    ASSERT_CMR_CALL( CMRdblmatCreateFromDenseStream(cmr, stream, &dense) );
+    fclose(stream);
+  
+    const char* sparseInput = "3 3 0 ";
+    stream = fmemopen((char*) sparseInput, strlen(sparseInput), "r");
+    CMR_DBLMAT* sparse = NULL;
+    ASSERT_CMR_CALL( CMRdblmatCreateFromSparseStream(cmr, stream, &sparse) );
+    fclose(stream);
+
+    ASSERT_TRUE( CMRdblmatCheckEqual(dense, sparse) );
+
+    ASSERT_CMR_CALL( CMRdblmatFree(cmr, &dense) );
+    ASSERT_CMR_CALL( CMRdblmatFree(cmr, &sparse) );
+  }
+
+  {
+    /* Arbitrary matrix */
     const char* denseInput = "3 3 "
       "0.25 0 0 "
       "0 0.5 1 "
@@ -40,6 +64,30 @@ TEST(Matrix, Read)
 
   /* Int matrices. */
   {
+    /* Zero matrix. */
+    const char* denseInput = "3 3 "
+      "0 0 0 "
+      "0 0 0 "
+      "0 0 0 ";
+    FILE* stream = fmemopen((char*) denseInput, strlen(denseInput), "r");
+    CMR_INTMAT* dense = NULL;
+    ASSERT_CMR_CALL( CMRintmatCreateFromDenseStream(cmr, stream, &dense) );
+    fclose(stream);
+  
+    const char* sparseInput = "3 3 0 ";
+    stream = fmemopen((char*) sparseInput, strlen(sparseInput), "r");
+    CMR_INTMAT* sparse = NULL;
+    ASSERT_CMR_CALL( CMRintmatCreateFromSparseStream(cmr, stream, &sparse) );
+    fclose(stream);
+
+    ASSERT_TRUE( CMRintmatCheckEqual(dense, sparse) );
+
+    ASSERT_CMR_CALL( CMRintmatFree(cmr, &dense) );
+    ASSERT_CMR_CALL( CMRintmatFree(cmr, &sparse) );
+  }
+
+  {
+    /* Arbitrary matrix */
     const char* denseInput = "3 3 "
       "1 0 0 "
       "0 1 1 "
@@ -68,6 +116,30 @@ TEST(Matrix, Read)
 
   /* Char matrices. */
   {
+    /* Zero matrix. */
+    const char* denseInput = "3 3 "
+      "0 0 0 "
+      "0 0 0 "
+      "0 0 0 ";
+    FILE* stream = fmemopen((char*) denseInput, strlen(denseInput), "r");
+    CMR_CHRMAT* dense = NULL;
+    ASSERT_CMR_CALL( CMRchrmatCreateFromDenseStream(cmr, stream, &dense) );
+    fclose(stream);
+  
+    const char* sparseInput = "3 3 0 ";
+    stream = fmemopen((char*) sparseInput, strlen(sparseInput), "r");
+    CMR_CHRMAT* sparse = NULL;
+    ASSERT_CMR_CALL( CMRchrmatCreateFromSparseStream(cmr, stream, &sparse) );
+    fclose(stream);
+
+    ASSERT_TRUE( CMRchrmatCheckEqual(dense, sparse) );
+
+    ASSERT_CMR_CALL( CMRchrmatFree(cmr, &dense) );
+    ASSERT_CMR_CALL( CMRchrmatFree(cmr, &sparse) );
+  }
+
+  {
+    /* Arbitrary matrix. */
     const char* denseInput = "3 3 "
       "1 0 0 "
       "0 1 1 "
@@ -215,7 +287,7 @@ TEST(Matrix, Submatrix)
   submatrix->columns[2] = 6;
 
   CMR_CHRMAT* result = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, submatrix, &result) );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, submatrix, &result) );
 
   CMRchrmatPrintDense(cmr, result, stdout, '0', true);
   

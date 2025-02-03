@@ -12,7 +12,8 @@
 
 typedef struct
 {
-  size_t keyIndex;                /**< \brief Position of first key byte in \ref CMR_HASHTABLE::keyStorage. */
+  size_t keyIndex;
+    /**< \brief Position of first key byte in \ref CMR_LINEARHASHTABLE_ARRAY::keyStorage. */
   size_t keyLength;               /**< \brief Length of key array. */
   CMR_LINEARHASHTABLE_HASH hash;  /**< \brief Hash value of key array. */
   const void* value;              /**< \brief Stored value. */
@@ -401,6 +402,8 @@ CMR_ERROR CMRlisthashtableInsert(CMR* cmr, CMR_LISTHASHTABLE* hashtable, CMR_LIS
 
 CMR_ERROR CMRlisthashtableRemove(CMR* cmr, CMR_LISTHASHTABLE* hashtable, CMR_LISTHASHTABLE_ENTRY entry)
 {
+  CMR_UNUSED(cmr);
+
   assert(cmr);
   assert(hashtable);
 
