@@ -1,4 +1,4 @@
-# Series-Parallel Matroids # {#series-parallel}
+# Series-Parallel Matrices # {#series-parallel}
 
 A matrix \f$ A \in \{-1,0,+1\}^{m \times n} \f$ is called **series-parallel** if it can be obtained from a \f$ 0 \f$-by-\f$ 0 \f$ matrix by successively adjoining
 
@@ -33,20 +33,26 @@ The command
 
     cmr-series-parallel IN-MAT [OPTION...]
 
-determines whether the matrix given in file `IN-MAT` is series-parallel.
+determines whether the [matrix](\ref file-formats-matrix) given in file `IN-MAT` is series-parallel.
 If this is not the case, then a maximal number of SP-reductions is carried out, leading to the **reduced** matrix.
 Moreover, one can ask for one of the minimal non-series-parallel submatrices above.
 
 **Options:**
-  - `-i FORMAT`       Format of file `IN-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: dense.
+  - `-i FORMAT`       Format of file `IN-MAT`; default: [dense](\ref dense-matrix).
   - `-S OUT-SP`       Write the list of series-parallel reductions to file `OUT-SP`; default: skip computation.
   - `-R OUT-REDUCED`  Write the reduced submatrix to file `OUT-REDUCED`; default: skip computation.
   - `-N NON-SUB`      Write a minimal non-series-parallel submatrix to file `NON-SUB`; default: skip computation.
   - `-b`              Test for being binary series-parallel; default: ternary.
-  - `-s`              Print statistics about the computation to stderr.
 
-If `IN-MAT` is `-` then the matrix is read from stdin.
-If `OUT-SP`, `OUT-REDUCED` or `NON-SUB` is `-` then the list of reductions (resp. the submatrix) is written to stdout.
+**Advanced options**:
+  - `--stats`            Print statistics about the computation to stderr.
+  - `--time-limit LIMIT` Allow at most `LIMIT` seconds for the computation.
+
+Formats for matrices: [dense](\ref dense-matrix), [sparse](\ref sparse-matrix)
+
+If `IN-MAT` is `-` then the [matrix](\ref file-formats-matrix) is read from stdin.
+
+If `OUT-SP`, `OUT-REDUCED` or `NON-SUB` is `-` then the list of reductions (resp. the [submatrix](\ref file-formats-submatrix)) is written to stdout.
 
 ## Algorithm ##
 
@@ -57,9 +63,9 @@ For a matrix \f$ A \in \{0,1\}^{m \times n}\f$ with \f$ k \f$ (sorted) nonzeros 
 
 The corresponding functions in the library are
 
-  - CMRtestTernarySeriesParallel() tests a binary matrix for being series-parallel.
-  - CMRtestBinarySeriesParallel() tests a binary matrix for being series-parallel.
-  - CMRdecomposeBinarySeriesParallel() tests a binary matrix for being series-parallel, but may also terminate early, returning a 2-separation of \f$ A \f$.
-  - CMRdecomposeTernarySeriesParallel() tests a ternary matrix for being series-parallel, but may also terminate early, returning a 2-separation of \f$ A \f$.
+  - CMRspTestTernary() tests a binary matrix for being series-parallel.
+  - CMRspTestBinary() tests a binary matrix for being series-parallel.
+  - CMRspDecomposeBinary() tests a binary matrix for being series-parallel, but may also terminate early, returning a 2-separation of \f$ A \f$.
+  - CMRspDecomposeTernary() tests a ternary matrix for being series-parallel, but may also terminate early, returning a 2-separation of \f$ A \f$.
   
 and are defined in \ref series_parallel.h.

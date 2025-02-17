@@ -17,11 +17,23 @@ extern "C" {
 #include <cmr/regular.h>
 #include <cmr/matrix.h>
 #include <cmr/camion.h>
-  
+
+typedef enum
+{
+  CMR_TU_ALGORITHM_DECOMPOSITION = 0, /**< \brief Algorithm based on Seymour's decomposition of regular matroids. */
+  CMR_TU_ALGORITHM_EULERIAN = 1,      /**< \brief Enumeration algorithm based on Eulerian submatrices. */
+  CMR_TU_ALGORITHM_PARTITION = 2      /**< \brief Enumeration algorithm based on criterion of Ghouila-Houri. */
+} CMR_TU_ALGORITHM;
+
 typedef struct
 {
-  CMR_REGULAR_PARAMETERS regular; /**< \brief Parameters for regularity test. */
-} CMR_TU_PARAMETERS;
+  CMR_TU_ALGORITHM algorithm; /**< \brief Algorithm to use. */
+  CMR_SEYMOUR_PARAMS seymour; /**< \brief Parameters for testing via Seymour decomposition. */
+  bool ternary;               /**< \brief Whether to create a ternary Seymour decomposition tree (default: \c true). */
+  bool camionFirst;           /**< \brief If \c ternary is \c false, then whether to run the Camion test first. */
+  bool naiveSubmatrix;        /**< \brief Whether to use the naive submatrix search instead of a greedy algorithm
+                               **         (default: \c false). */
+} CMR_TU_PARAMS;
 
 /**
  * \brief Initializes the default parameters for recognition of [totally unimodular](\ref tu) matrices.
@@ -30,8 +42,8 @@ typedef struct
  */
 
 CMR_EXPORT
-CMR_ERROR CMRparamsTotalUnimodularityInit(
-  CMR_TU_PARAMETERS* params  /**< Pointer to parameters. */
+CMR_ERROR CMRtuParamsInit(
+  CMR_TU_PARAMS* params  /**< Pointer to parameters. */
 );
 
 /**
@@ -40,19 +52,25 @@ CMR_ERROR CMRparamsTotalUnimodularityInit(
 
 typedef struct
 {
-  size_t totalCount;              /**< Total number of invocations. */
-  double totalTime;               /**< Total time of all invocations. */
-  CMR_CAMION_STATISTICS camion;   /**< Camion signing. */
-  CMR_REGULAR_STATISTICS regular; /**< Regularity test. */
-} CMR_TU_STATISTICS;
+  CMR_SEYMOUR_STATS seymour;          /**< Statistics for Seymour decomposition computation. */
+  CMR_CAMION_STATISTICS camion;       /**< Statistics for Camion signing. */
+
+  uint32_t enumerationRowSubsets;     /**< Number of considered row subsets in enumeration algorithm. */
+  uint32_t enumerationColumnSubsets;  /**< Number of considered column subsets in enumeration algorithm. */
+  double enumerationTime;             /**< Total time of enumeration algorithm. */
+
+  uint32_t partitionRowSubsets;       /**< Number of considered row subsets in partition algorithm. */
+  uint32_t partitionColumnSubsets;    /**< Number of considered column subsets in partition algorithm. */
+  double partitionTime;               /**< Total time of partition algorithm. */
+} CMR_TU_STATS;
 
 /**
  * \brief Initializes all statistics for recognition algorithm for [totally unimodular](\ref tu) matrices.
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsTotalUnimodularityInit(
-  CMR_TU_STATISTICS* stats /**< Pointer to statistics. */
+CMR_ERROR CMRtuStatsInit(
+  CMR_TU_STATS* stats /**< Pointer to statistics. */
 );
 
 /**
@@ -60,9 +78,9 @@ CMR_ERROR CMRstatsTotalUnimodularityInit(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsTotalUnimodularityPrint(
+CMR_ERROR CMRtuStatsPrint(
   FILE* stream,             /**< File stream to print to. */
-  CMR_TU_STATISTICS* stats, /**< Pointer to statistics. */
+  CMR_TU_STATS* stats, /**< Pointer to statistics. */
   const char* prefix        /**< Prefix string to prepend to each printed line (may be \c NULL). */
 );
 
@@ -79,15 +97,33 @@ CMR_ERROR CMRstatsTotalUnimodularityPrint(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestTotalUnimodularity(
+CMR_ERROR CMRtuTest(
   CMR* cmr,                   /**< \ref CMR environment */
   CMR_CHRMAT* matrix,         /**< Matrix \f$ M \f$. */
   bool* pisTotallyUnimodular, /**< Pointer for storing whether \f$ M \f$ is totally unimodular. */
-  CMR_DEC** pdec,             /**< Pointer for storing the decomposition tree (may be \c NULL). */
+  CMR_SEYMOUR_NODE** proot,   /**< Pointer for storing the decomposition tree (may be \c NULL). */
   CMR_SUBMAT** psubmatrix,    /**< Pointer for storing a submatrix with non-ternary determinant (may be \c NULL). */
-  CMR_TU_PARAMETERS* params,  /**< Parameters for the computation (may be \c NULL for defaults). */
-  CMR_TU_STATISTICS* stats,   /**< Statistics for the computation (may be \c NULL). */
+  CMR_TU_PARAMS* params,      /**< Parameters for the computation (may be \c NULL for defaults). */
+  CMR_TU_STATS* stats,        /**< Statistics for the computation (may be \c NULL). */
   double timeLimit            /**< Time limit to impose. */
+);
+
+/**
+ * \brief Completes a subtree of an existing decomposition tree.
+ *
+ * Replace the node's subtree by a new one even if it exists. Note that different parameters may yield a different
+ * subtree.
+ *
+ * \note Requires \p params.algorithm to be \ref CMR_TU_ALGORITHM_DECOMPOSITION.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRtuCompleteDecomposition(
+  CMR* cmr,               /**< \ref CMR environment. */
+  CMR_SEYMOUR_NODE* dec,  /**< Pointer to the decomposition node that is the root of the new subtree. */
+  CMR_TU_PARAMS* params,  /**< Parameters for the computation. */
+  CMR_TU_STATS* stats,    /**< Statistics for the computation (may be \c NULL). */
+  double timeLimit        /**< Time limit to impose. */
 );
 
 #ifdef __cplusplus

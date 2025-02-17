@@ -38,7 +38,7 @@ int printUsage(const char* program)
   fputs("               row/column has at least SPARSITY 1's in expectation.\n", stderr);
   fputs("  -r           Randomize matrix by permuting rows and columns afterwards (default: false).\n", stderr);
   fputs("  -b NUM       Benchmarks the recognition algorithm for the created matrix with NUM repetitions.\n", stderr);
-  fputs("Notes:", stderr);
+  fputs("Notes:\n", stderr);
   fputs("  -p and -s cannot be specified at the same time.\n", stderr);
   return EXIT_FAILURE;
 }
@@ -126,7 +126,7 @@ CMR_ERROR genMatrixSeriesParallel(
   size_t numTotalColumns = numBaseColumns + numZeroColumns + numUnitColumns + numCopiedColumns;
 
   CMR_SP_STATISTICS stats;
-  CMR_CALL( CMRstatsSeriesParallelInit(&stats) );
+  CMR_CALL( CMRspStatsInit(&stats) );
   size_t numBenchmarkNonzeros = 0;
   for (size_t benchmark = benchmarkRepetitions ? benchmarkRepetitions : 1; benchmark > 0; --benchmark)
   {
@@ -293,10 +293,10 @@ CMR_ERROR genMatrixSeriesParallel(
       }
     }
 
-    fprintf(stderr, "Generated a %ldx%ld matrix with %ld nonzeros.\n", numTotalRows, numTotalColumns, numTotalNonzeros);
-    fprintf(stderr, "It contains a %ldx%ld base matrix with %ld nonzeros, 1-entries generated with probability %g.\n",
+    fprintf(stderr, "Generated a %zux%zu matrix with %zu nonzeros.\n", numTotalRows, numTotalColumns, numTotalNonzeros);
+    fprintf(stderr, "It contains a %zux%zu base matrix with %zu nonzeros, 1-entries generated with probability %g.\n",
       numBaseRows, numBaseColumns, numBaseNonzeros, probability);
-    fprintf(stderr, "Series-parallel operations: %ldx%ld zero, %ldx%ld unit, %ldx%ld copied\n", numZeroRows,
+    fprintf(stderr, "Series-parallel operations: %zux%zu zero, %zux%zu unit, %zux%zu copied\n", numZeroRows,
       numZeroColumns, numUnitRows, numUnitColumns, numCopiedRows, numCopiedColumns);
     if (randomize)
       fputs("Random row and column permutations were applied.\n", stderr);
@@ -358,12 +358,12 @@ CMR_ERROR genMatrixSeriesParallel(
       CMR_SUBMAT* wheelMatrix = NULL;
       if (ternary)
       {
-        CMR_CALL( CMRtestTernarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL, &wheelMatrix,
+        CMR_CALL( CMRspTestTernary(cmr, matrix, NULL, reductions, &numReductions, NULL, &wheelMatrix,
           &stats, DBL_MAX) );
       }
       else
       {
-        CMR_CALL( CMRtestBinarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL, &wheelMatrix,
+        CMR_CALL( CMRspTestBinary(cmr, matrix, NULL, reductions, &numReductions, NULL, &wheelMatrix,
           &stats, DBL_MAX) );
       }
       numBenchmarkNonzeros += numTotalNonzeros;
@@ -376,12 +376,12 @@ CMR_ERROR genMatrixSeriesParallel(
     {
       /* Print matrix. */
 
-      printf("%ld %ld %ld\n\n", numTotalRows, numTotalColumns, numTotalNonzeros);
+      printf("%zu %zu %zu\n\n", numTotalRows, numTotalColumns, numTotalNonzeros);
       for (size_t row = 0; row < numTotalRows; ++row)
       {
         for (ListNonzero* nz = rowHeads[row].right; nz->column != SIZE_MAX; nz = nz->right)
         {
-          printf("%ld %ld %d\n", rowPermutation[nz->row]+1, columnPermutation[nz->column]+1, nz->value);
+          printf("%zu %zu %d\n", rowPermutation[nz->row]+1, columnPermutation[nz->column]+1, nz->value);
         }
       }
     }
@@ -406,7 +406,7 @@ CMR_ERROR genMatrixSeriesParallel(
 
   if (benchmarkRepetitions > 0)
   {
-    CMR_CALL( CMRstatsSeriesParallelPrint(stderr, &stats, NULL) );
+    CMR_CALL( CMRspStatsPrint(stderr, &stats, NULL) );
     printf("Average number of nonzeros:     %f\n", (double)(numBenchmarkNonzeros) * 1.0 / benchmarkRepetitions);
   }
 
@@ -464,14 +464,14 @@ int main(int argc, char** argv)
       numUnitRows = strtoull(argv[a+1], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of unit rows <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
       numUnitColumns = strtoull(argv[a+2], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of unit columns <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
       a+= 2;
     }
@@ -481,14 +481,14 @@ int main(int argc, char** argv)
       numCopiedRows = strtoull(argv[a+1], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of copied rows <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
       numCopiedColumns = strtoull(argv[a+2], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of copied columns <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
       a+= 2;
     }
@@ -501,8 +501,7 @@ int main(int argc, char** argv)
       if (*p != '\0' || probability < 0.0 || probability > 1.0)
       {
         fprintf(stderr, "Error: invalid probablity <%s>", argv[a+1]);
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        return printUsage(argv[0]);
       }
       a++;
     }
@@ -513,8 +512,7 @@ int main(int argc, char** argv)
       if (*p != '\0' || sparsity < 0.0)
       {
         fprintf(stderr, "Error: invalid sparsity <%s>", argv[a+1]);
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        return printUsage(argv[0]);
       }
       a++;
     }
@@ -527,8 +525,7 @@ int main(int argc, char** argv)
       if (*p != '\0' || benchmarkRepetitions == 0)
       {
         fprintf(stderr, "Error: invalid number of benchmark repetitions <%s>", argv[a+1]);
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        return printUsage(argv[0]);
       }
       a++;
     }
@@ -538,8 +535,8 @@ int main(int argc, char** argv)
       numBaseRows = strtoull(argv[a], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of base rows <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
     }
     else if (numBaseColumns == SIZE_MAX)
@@ -548,13 +545,13 @@ int main(int argc, char** argv)
       numBaseColumns = strtoull(argv[a], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of base columns <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
     }
     else
     {
-      fprintf(stderr, "Error: more than two size indicators specified: %ld %ld %s\n\n", numBaseRows, numBaseColumns,
+      fprintf(stderr, "Error: more than two size indicators specified: %zu %zu %s\n\n", numBaseRows, numBaseColumns,
         argv[a]);
       return printUsage(argv[0]);
     }
@@ -596,10 +593,10 @@ int main(int argc, char** argv)
   switch (error)
   {
   case CMR_ERROR_INPUT:
-    puts("Input error.");
+    fputs("Input error.\n", stderr);
     return EXIT_FAILURE;
   case CMR_ERROR_MEMORY:
-    puts("Memory error.");
+    fputs("Memory error.\n", stderr);
     return EXIT_FAILURE;
   default:
     return EXIT_SUCCESS;

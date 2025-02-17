@@ -1,9 +1,9 @@
-  #include <gtest/gtest.h>
+#include <gtest/gtest.h>
 
 #include "common.h"
 #include <cmr/ctu.h>
 
-TEST(ComplementTotalUnimodularity, Examples)
+TEST(CTU, ExamplesSeymour)
 {
   CMR* cmr = NULL;
   ASSERT_CMR_CALL( CMRcreateEnvironment(&cmr) );
@@ -18,7 +18,11 @@ TEST(ComplementTotalUnimodularity, Examples)
     ) );
 
     bool isCTU;
-    ASSERT_CMR_CALL( CMRtestComplementTotalUnimodularity(cmr, matrix, &isCTU, NULL, NULL, NULL) );
+    CMR_CTU_PARAMS params;
+    ASSERT_CMR_CALL( CMRctuParamsInit(&params) );
+    params.tu.seymour.decomposeStrategy = CMR_SEYMOUR_DECOMPOSE_FLAG_SEYMOUR;
+
+    ASSERT_CMR_CALL( CMRctuTest(cmr, matrix, &isCTU, NULL, NULL, &params, NULL, DBL_MAX) );
     
     ASSERT_TRUE(isCTU);
     ASSERT_CMR_CALL( CMRchrmatFree(cmr, &matrix) );
@@ -36,10 +40,14 @@ TEST(ComplementTotalUnimodularity, Examples)
     bool isCTU;
     size_t complementRow;
     size_t complementColumn;
-    ASSERT_CMR_CALL( CMRtestComplementTotalUnimodularity(cmr, matrix, &isCTU, &complementRow, &complementColumn, NULL) );
+    CMR_CTU_PARAMS params;
+    ASSERT_CMR_CALL( CMRctuParamsInit(&params) );
+    params.tu.seymour.decomposeStrategy = CMR_SEYMOUR_DECOMPOSE_FLAG_SEYMOUR;
+
+    ASSERT_CMR_CALL( CMRctuTest(cmr, matrix, &isCTU, &complementRow, &complementColumn, &params, NULL, DBL_MAX) );
     ASSERT_FALSE(isCTU);
-    ASSERT_EQ(complementRow, 0);
-    ASSERT_EQ(complementColumn, 0);
+    ASSERT_EQ(complementRow, 0UL);
+    ASSERT_EQ(complementColumn, 0UL);
     ASSERT_CMR_CALL( CMRchrmatFree(cmr, &matrix) );
   }
 

@@ -16,15 +16,21 @@ The command
 
     cmr-camion IN-MAT [OPTION]...
 
-determines whether the matrix given in file `IN-MAT` is Camion-signed.
+determines whether the [matrix](\ref file-formats-matrix) given in file `IN-MAT` is Camion-signed.
 
 **Options:**
-  - `-i FORMAT`   Format of file `IN-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: dense.
+  - `-i FORMAT`   Format of file `IN-MAT`; default: [dense](\ref dense-matrix).
   - `-N NON-SUB`  Write a minimal non-Camion submatrix to file `NON-SUB`; default: skip computation.
-  - `-s`          Print statistics about the computation to stderr.
 
-If `IN-MAT` is `-` then the matrix is read from stdin.
-If `NON-SUB` is `-` then the submatrix is written to stdout.
+**Advanced options**:
+  - `--stats`            Print statistics about the computation to stderr.
+  - `--time-limit LIMIT` Allow at most `LIMIT` seconds for the computation.
+
+Formats for matrices: [dense](\ref dense-matrix), [sparse](\ref sparse-matrix)
+
+If `IN-MAT` is `-` then the [matrix](\ref file-formats-matrix) is read from stdin.
+
+If `NON-SUB` is `-` then the [submatrix](\ref file-formats-submatrix)  is written to stdout.
 
 ### Algorithm ###
 
@@ -35,7 +41,7 @@ For a matrix \f$ M \in \{-1,0,1\}^{m \times n} \f$ it runs in \f$ \mathcal{O}( \
 
 The corresponding function in the library is
 
-  - CMRtestCamionSigned() tests a matrix for being Camion-signed.
+  - CMRcamionTestSigns() tests a matrix for being Camion-signed.
 
 and is defined in \ref camion.h.
 
@@ -49,11 +55,17 @@ The command
 modifies the signs of the matrix given in file `IN-MAT` such that it is Camion-signed and writes the resulting new matrix to file `OUT-MAT`.
 
 **Options:**
-  - `-i FORMAT`   Format of file `IN-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: dense.
-  - `-o FORMAT`   Format of file `OUT-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: same as format of `IN-MAT`.
-  - `-s`          Print statistics about the computation to stderr.
+  - `-i FORMAT`   Format of file `IN-MAT`; default: [dense](\ref dense-matrix).
+  - `-o FORMAT`   Format of file `OUT-MAT`; default: same as format of `IN-MAT`.
+
+**Advanced options**:
+  - `--stats`            Print statistics about the computation to stderr.
+  - `--time-limit LIMIT` Allow at most `LIMIT` seconds for the computation.
+
+Formats for matrices: [dense](\ref dense-matrix), [sparse](\ref sparse-matrix)
 
 If `IN-MAT` is `-` then the matrix is read from stdin.
+
 If `OUT-MAT` is `-` then the matrix is written to stdout.
 
 ### Algorithm ###
@@ -65,6 +77,6 @@ For a matrix \f$ M \in \{-1,0,1\}^{m \times n} \f$ it runs in \f$ \mathcal{O}( \
 
 The corresponding function in the library is
 
-  - CMRcomputeCamionSigned() Computes a Camion-signed version of a given ternary matrix.
+  - CMRcamionComputeSigns() Computes a Camion-signed version of a given ternary matrix.
 
 and is defined in \ref camion.h.

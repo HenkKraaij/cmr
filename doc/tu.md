@@ -11,25 +11,39 @@ The command
 
     cmr-tu IN-MAT [OPTION...]
 
-determines whether the matrix given in file `IN-MAT` is totally unimodular.
+determines whether the [matrix](\ref file-formats-matrix) given in file `IN-MAT` is totally unimodular.
 
 **Options:**
-  - `-i FORMAT`  Format of file `IN-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: dense.
+  - `-i FORMAT`  Format of file `IN-MAT`; default: [dense](\ref dense-matrix).
   - `-D OUT-DEC` Write a decomposition tree of the underlying regular matroid to file `OUT-DEC`; default: skip computation.
   - `-N NON-SUB` Write a minimal non-totally-unimodular submatrix to file `NON-SUB`; default: skip computation.
-  - `-s`         Print statistics about the computation to stderr.
 
 **Advanced options:**
+  - `--stats`              Print statistics about the computation to stderr.
+  - `--time-limit LIMIT`   Allow at most `LIMIT` seconds for the computation.
+  - `--decompose STRATEGY` Strategy for decomposing among {`DP`, `YP`, `P3`, `D3`, `Y3`}; default: `D3`.
   - `--no-direct-graphic`  Check only 3-connected matrices for regularity.
   - `--no-series-parallel` Do not allow series-parallel operations in decomposition tree.
+  - `--naive-submatrix`    Use naive bad submatrix algorithm instead of greedy heuristic.
+  - `--algo ALGO`          Use algorithm from {`decomposition`, `submatrix`, `partition`}; default: `decomposition`.
 
-If `IN-MAT` is `-` then the matrix is read from stdin.
-If `OUT-DEC` or `NON-SUB` is `-` then the decomposition tree (resp. the submatrix) is written to stdout.
+**Decomposition strategies:** 1st letter for distributed, 2nd for concentrated rank(s).
+  - `D` Delta-sum (distributed ranks)
+  - `Y` Y-sum (distributed ranks)
+  - `3` 3-sum (concentrated rank)
+  - `P` pivot (changes rank type)
+Note that D3 and Y3 do not produce pivots.
 
-## Algorithm ##
+Formats for matrices: [dense](\ref dense-matrix), [sparse](\ref sparse-matrix)
 
-The implemented recognition algorithm is based on [Implementation of a unimodularity test](https://doi.org/10.1007/s12532-012-0048-x) by Matthias Walter and Klaus Truemper (Mathematical Programming Computation, 2013).
-It first runs \ref camion to reduce the question to that of [recognizing regular matroids](\ref regular).
+If `IN-MAT` is `-` then the [matrix](\ref file-formats-matrix) is read from stdin.
+
+If `OUT-DEC` or `NON-SUB` is `-` then the decomposition tree (resp. the [submatrix](\ref file-formats-submatrix)) is written to stdout.
+
+## Algorithms ##
+
+The implemented default recognition algorithm is based on [Implementation of a unimodularity test](https://doi.org/10.1007/s12532-012-0048-x) by Matthias Walter and Klaus Truemper (Mathematical Programming Computation, 2013).
+It either runs \ref camion to reduce the question to that of [recognizing binary regular matroids](\ref binary_regular) or decomposes a given ternary matrix directly by means of a [Seymour decomposition](\ref seymour_decomposition).
 Please cite the paper in case the implementation contributed to your research:
 
     @Article{WalterT13,
@@ -45,10 +59,17 @@ Please cite the paper in case the implementation contributed to your research:
       publisher = {Springer-Verlag},
     }
 
+In order to repeat experiments described in the paper above, the function can be parameterized as to use exponential-time algorithms.
+
+  - The first is based on the criterion of Ghouila-Houri and runs in time \f$ \mathcal{O}( (m + n) \cdot 3^{\min(m, n)}) \f$.
+  - The second enumerates square [Eulerian submatrices](https://www.ams.org/journals/proc/1965-016-05/S0002-9939-1965-0180568-2/) and runs in time \f$ \mathcal{O}( (m+n) \cdot 2^{ m + n } ) \f$.
+
 ## C Interface ##
 
 The corresponding function in the library is
 
-  - CMRtestTotalUnimodularity() tests a matrix for being totally unimodular.
+  - CMRtuTest() tests a matrix for being totally unimodular.
 
 and is defined in \ref tu.h.
+Its parameters also allow to choose one of the enumeration algorithms with exponential running time instead of the decomposition algorithm.
+

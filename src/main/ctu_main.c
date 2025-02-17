@@ -53,7 +53,7 @@ CMR_ERROR testComplementTotalUnimodularity(
     CMR_CALL( CMRchrmatCreateFromSparseStream(cmr, inputMatrixFile, &matrix) );
   if (inputMatrixFile != stdin)
     fclose(inputMatrixFile);
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros, (clock() - readClock) * 1.0 / CLOCKS_PER_SEC);
 
   /* Actual test. */
@@ -61,9 +61,11 @@ CMR_ERROR testComplementTotalUnimodularity(
   bool isCTU;
   size_t complementRow = SIZE_MAX;
   size_t complementColumn = SIZE_MAX;
+  CMR_CTU_PARAMS params;
+  CMR_CALL( CMRctuParamsInit(&params) );
   CMR_CTU_STATISTICS stats;
   CMR_CALL( CMRstatsComplementTotalUnimodularityInit(&stats) );
-  CMR_CALL( CMRtestComplementTotalUnimodularity(cmr, matrix, &isCTU, &complementRow, &complementColumn, &stats) );
+  CMR_CALL( CMRctuTest(cmr, matrix, &isCTU, &complementRow, &complementColumn, &params, &stats, timeLimit) );
 
   fprintf(stderr, "Matrix %scomplement totally unimodular.\n", isCTU ? "IS " : "IS NOT ");
   if (printStats)
@@ -79,9 +81,9 @@ CMR_ERROR testComplementTotalUnimodularity(
         outputOperationsToFile ? outputOperationsFileName : "stdout", outputOperationsToFile ? ">" : "");
 
       if (complementRow < SIZE_MAX)
-        fprintf(outputOperationsFile, "Complement row %lu\n", complementRow + 1);
+        fprintf(outputOperationsFile, "Complement row %zu\n", complementRow + 1);
       if (complementColumn < SIZE_MAX)
-        fprintf(outputOperationsFile, "Complement column %lu\n", complementColumn + 1);
+        fprintf(outputOperationsFile, "Complement column %zu\n", complementColumn + 1);
 
       if (outputOperationsFile)
         fclose(outputOperationsFile);
@@ -96,7 +98,7 @@ CMR_ERROR testComplementTotalUnimodularity(
         outputMatrixToFile ? ">" : "", outputFormat == FILEFORMAT_MATRIX_DENSE ? "dense" : "sparse");
 
       CMR_CHRMAT* complemented = NULL;
-      CMR_CALL( CMRcomplementRowColumn(cmr, matrix, complementRow, complementColumn, &complemented) );
+      CMR_CALL( CMRctuComplementRowColumn(cmr, matrix, complementRow, complementColumn, &complemented) );
 
       if (outputFormat == FILEFORMAT_MATRIX_DENSE)
         CMR_CALL( CMRchrmatPrintDense(cmr, complemented, stdout, '0', false) );
@@ -128,11 +130,9 @@ CMR_ERROR complementMatrix(
   FileFormat outputFormat,          /**< Format of the output submatrix. */
   size_t complementRow,             /**< Complement row. */
   size_t complementColumn,          /**< Complement column. */
-  char* outputMatrixFileName,       /**< File name for the matrix; may be `-' for stdout. */
-  bool printStats                   /**< Whether to print statistics to stderr. */
+  char* outputMatrixFileName        /**< File name for the matrix; may be `-' for stdout. */
 )
 {
-  clock_t startClock, endTime;
   FILE* inputMatrixFile = strcmp(inputMatrixFileName, "-") ? fopen(inputMatrixFileName, "r") : stdin;
   if (!inputMatrixFile)
     return CMR_ERROR_INPUT;
@@ -142,7 +142,6 @@ CMR_ERROR complementMatrix(
 
   /* Read matrix. */
 
-  startClock = clock();
   CMR_CHRMAT* matrix = NULL;
   if (inputFormat == FILEFORMAT_MATRIX_DENSE)
     CMR_CALL( CMRchrmatCreateFromDenseStream(cmr, inputMatrixFile, &matrix) );
@@ -150,12 +149,12 @@ CMR_ERROR complementMatrix(
     CMR_CALL( CMRchrmatCreateFromSparseStream(cmr, inputMatrixFile, &matrix) );
   if (inputMatrixFile != stdin)
     fclose(inputMatrixFile);
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros);
 
   /* Carry out complementing. */
   CMR_CHRMAT* complemented = NULL;
-  CMR_CALL( CMRcomplementRowColumn(cmr, matrix, complementRow, complementColumn, &complemented) );
+  CMR_CALL( CMRctuComplementRowColumn(cmr, matrix, complementRow, complementColumn, &complemented) );
 
   bool outputMatrixToFile = strcmp(outputMatrixFileName, "-");
   FILE* outputMatrixFile = outputMatrixToFile ? fopen(outputMatrixFileName, "w") : stdout;
@@ -190,23 +189,39 @@ CMR_ERROR complementMatrix(
 int printUsage(const char* program)
 {
   fputs("Usage:\n", stderr);
-  fprintf(stderr, "%s IN-MAT [OPTION]...\n\n", program);
-  fputs("  (1) determines whether the matrix given in file IN-MAT is complement totally unimodular.\n\n", stderr);
-  fprintf(stderr, "%s -c IN-MAT OUT-MAT [OPTION]...\n\n", program);
-  fputs("  (2) applies a sequence of row or column complement operations the matrix given in file IN-MAT and writes the result to OUT-MAT.\n\n\n",
-    stderr);
+
+  fprintf(stderr, "%s IN-MAT [OPTION]...\n", program);
+  fputs("  (1) determines whether the matrix given in file IN-MAT is complement totally unimodular.\n", stderr);
+  fputs("\n", stderr);
+
+  fprintf(stderr, "%s -c IN-MAT OUT-MAT [OPTION]...\n", program);
+  fputs("  (2) applies a sequence of row or column complement operations the matrix given in file IN-MAT and writes the"
+    " result to OUT-MAT.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Options specific to (1):\n", stderr);
-  fputs("  -n OUT-OPS  Write complement operations that leads to a non-totally-unimodular matrix to file OUT-OPS; default: skip computation.\n", stderr);
-  fputs("  -N OUT-MAT  Write a complemented matrix that is non-totally-unimodular to file OUT-MAT; default: skip computation.\n", stderr);
+  fputs("  -n OUT-OPS  Write complement operations that leads to a non-totally-unimodular matrix to file OUT-OPS;"
+    " default: skip computation.\n", stderr);
+  fputs("  -N OUT-MAT  Write a complemented matrix that is non-totally-unimodular to file OUT-MAT; default: skip"
+    " computation.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Options specific to (2):\n", stderr);
   fputs("  -r ROW    Apply row complement operation to row ROW.\n", stderr);
   fputs("  -c COLUMN Apply column complement operation to column COLUMN.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Common options:\n", stderr);
-  fputs("  -i FORMAT   Format of file IN-MAT, among `dense' and `sparse'; default: dense.\n", stderr);
-  fputs("  -o FORMAT   Format of file OUT-MAT, among `dense' and `sparse'; default: same as for IN-MAT.\n", stderr);
-  fputs("  -s          Print statistics about the computation to stderr.\n\n", stderr);
+  fputs("  -i FORMAT   Format of file IN-MAT; default: dense.\n", stderr);
+  fputs("  -o FORMAT   Format of file OUT-MAT; default: same as for IN-MAT.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Advanced options:\n", stderr);
-  fputs("  --time-limit LIMIT   Allow at most LIMIT seconds for the computation.\n\n", stderr);
+  fputs("  --stats            Print statistics about the computation to stderr.\n", stderr);
+  fputs("  --time-limit LIMIT Allow at most LIMIT seconds for the computation.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Formats for matrices: dense, sparse\n", stderr);
   fputs("If IN-MAT is `-' then the matrix is read from stdin.\n", stderr);
   fputs("If OUT-OPS or OUT-MAT is `-` then the list of operations (resp. the matrix) is written to stdout.\n", stderr);
 
@@ -267,7 +282,7 @@ int main(int argc, char** argv)
       }
       outputMatrixFileName = argv[++a];
     }
-    else if (!strcmp(argv[a], "-s"))
+    else if (!strcmp(argv[a], "--stats"))
       printStats = true;
     else if (!strcmp(argv[a], "-i") && a+1 < argc)
     {
@@ -310,7 +325,7 @@ int main(int argc, char** argv)
       outputMatrixFileName = argv[a];
     else if (task == TASK_APPLY)
     {
-      printf("Error: Two output files <%s> and <%s> specified.\n\n", outputMatrixFileName, argv[a]);
+      printf("Error: Two output files <%s> and <%s> specified.f", outputMatrixFileName, argv[a]);
       return printUsage(argv[0]);
     }
     else
@@ -340,7 +355,7 @@ int main(int argc, char** argv)
   {
     assert(task == TASK_APPLY);
     error = complementMatrix(inputMatrixFileName, inputFormat, outputFormat, complementRow, complementColumn,
-      outputMatrixFileName, printStats);
+      outputMatrixFileName);
   }
 
   switch (error)

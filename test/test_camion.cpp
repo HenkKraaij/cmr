@@ -45,15 +45,15 @@ TEST(Camion, Change)
   CMR_CHRMAT* violator = NULL;
 
   bool alreadySigned;
-  ASSERT_CMR_CALL( CMRtestCamionSigned(cmr, matrix, &alreadySigned, &submatrix, NULL, DBL_MAX) );
+  ASSERT_CMR_CALL( CMRcamionTestSigns(cmr, matrix, &alreadySigned, &submatrix, NULL, DBL_MAX) );
   ASSERT_FALSE(alreadySigned);
   ASSERT_TRUE(submatrix != NULL);
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, submatrix, &violator) );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, submatrix, &violator) );
   ASSERT_TRUE(CMRchrmatCheckEqual(violator, checkViolator));
   ASSERT_CMR_CALL( CMRchrmatFree(cmr, &violator) );
   ASSERT_CMR_CALL( CMRsubmatFree(cmr, &submatrix) );
 
-  ASSERT_CMR_CALL( CMRcomputeCamionSigned(cmr, matrix, &alreadySigned, NULL, NULL, DBL_MAX) );
+  ASSERT_CMR_CALL( CMRcamionComputeSigns(cmr, matrix, &alreadySigned, NULL, NULL, DBL_MAX) );
   ASSERT_FALSE(alreadySigned);
   ASSERT_TRUE(CMRchrmatCheckEqual(matrix, check));
 
@@ -87,7 +87,7 @@ TEST(Camion, Issue10)
 
 
   bool alreadySigned;
-  ASSERT_CMR_CALL( CMRcomputeCamionSigned(cmr, matrix, &alreadySigned, NULL, NULL, DBL_MAX) );
+  ASSERT_CMR_CALL( CMRcamionComputeSigns(cmr, matrix, &alreadySigned, NULL, NULL, DBL_MAX) );
   ASSERT_FALSE(alreadySigned);
   ASSERT_TRUE(CMRchrmatCheckEqual(matrix, check));
 

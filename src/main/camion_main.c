@@ -55,20 +55,20 @@ CMR_ERROR checkCamionSigned(
     return CMR_ERROR_INPUT;
   }
 
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros, (clock() - readClock) * 1.0 / CLOCKS_PER_SEC);
 
   /* Actual test. */
   bool isCamion;
   CMR_SUBMAT* submatrix = NULL;
   CMR_CAMION_STATISTICS stats;
-  CMR_CALL( CMRstatsCamionInit(&stats) );
-  CMR_CALL( CMRtestCamionSigned(cmr, matrix, &isCamion,
+  CMR_CALL( CMRcamionStatsInit(&stats) );
+  CMR_CALL( CMRcamionTestSigns(cmr, matrix, &isCamion,
     outputSubmatrixFileName ? &submatrix : NULL, printStats ? &stats : NULL, timeLimit) );
 
   fprintf(stderr, "Matrix %sCamion-signed.\n", isCamion ? "IS " : "IS NOT ");
   if (printStats)
-    CMR_CALL( CMRstatsCamionPrint(stderr, &stats, NULL) );
+    CMR_CALL( CMRcamionStatsPrint(stderr, &stats, NULL) );
 
   if (submatrix)
   {
@@ -129,16 +129,16 @@ CMR_ERROR computeCamionSigned(
     return CMR_ERROR_INPUT;
   }
 
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros, (clock() - readClock) * 1.0 / CLOCKS_PER_SEC);
 
   /* Actual signing. */
 
   CMR_CAMION_STATISTICS stats;
-  CMR_CALL( CMRstatsCamionInit(&stats) );
-  CMR_CALL( CMRcomputeCamionSigned(cmr, matrix, NULL, NULL, &stats, timeLimit) );
+  CMR_CALL( CMRcamionStatsInit(&stats) );
+  CMR_CALL( CMRcamionComputeSigns(cmr, matrix, NULL, NULL, &stats, timeLimit) );
   if (printStats)
-    CMR_CALL( CMRstatsCamionPrint(stderr, &stats, NULL) );
+    CMR_CALL( CMRcamionStatsPrint(stderr, &stats, NULL) );
 
   /* Write to file. */
 
@@ -173,21 +173,34 @@ CMR_ERROR computeCamionSigned(
 int printUsage(const char* program)
 {
   fputs("Usage:\n", stderr);
-  fprintf(stderr, "%s IN-MAT [OPTION]...\n\n", program);
-  fputs("  (1) determines whether the matrix given in file IN-MAT is Camion-signed.\n\n", stderr);
-  fprintf(stderr, "%s IN-MAT -S OUT-MAT [OPTION]...\n\n", program);
-  fputs("  (2) modifies the signs of the matrix given in file IN-MAT such that it is Camion-signed and writes the resulting new matrix to file OUT-MAT.\n\n\n",
-    stderr);
+
+  fprintf(stderr, "%s IN-MAT [OPTION]...\n", program);
+  fputs("  (1) determines whether the matrix given in file IN-MAT is Camion-signed.\n", stderr);
+  fputs("\n", stderr);
+
+  fprintf(stderr, "%s IN-MAT -S OUT-MAT [OPTION]...\n", program);
+  fputs("  (2) modifies the signs of the matrix given in file IN-MAT such that it is Camion-signed and writes the"
+    " resulting new matrix to file OUT-MAT.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Options specific to (1):\n", stderr);
-  fputs("  -N NON-SUB   Write a minimal non-Camion submatrix to file NON-SUB; default: skip computation.\n\n", stderr);
+  fputs("  -N NON-SUB   Write a minimal non-Camion submatrix to file NON-SUB; default: skip computation.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Options specific to (2):\n", stderr);
-  fputs("  -o FORMAT    Format of file OUT-MAT, among `dense' and `sparse'; default: same as format of IN-MAT.\n\n",
-    stderr);
+  fputs("  -o FORMAT    Format of file OUT-MAT; default: same as format of IN-MAT.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Common options:\n", stderr);
-  fputs("  -i FORMAT    Format of file IN-MAT, among `dense' and `sparse'; default: dense.\n", stderr);
-  fputs("  -s           Print statistics about the computation to stderr.\n\n", stderr);
+  fputs("  -i FORMAT    Format of file IN-MAT; default: dense.\n", stderr);
+  fputs("\n", stderr);
+
   fputs("Advanced options:\n", stderr);
-  fputs("  --time-limit LIMIT   Allow at most LIMIT seconds for the computation.\n\n", stderr);
+  fputs("  --stats            Print statistics about the computation to stderr.\n", stderr);
+  fputs("  --time-limit LIMIT Allow at most LIMIT seconds for the computation.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Formats for matrices: dense, sparse\n", stderr);
   fputs("If IN-MAT is `-' then the matrix is read from stdin.\n", stderr);
   fputs("If NON-SUB or OUT-MAT is `-' then the submatrix (resp. the Camion-signed matrix) is written to stdout.\n",
     stderr);
@@ -219,7 +232,7 @@ int main(int argc, char** argv)
       outputMatrixFileName = argv[++a];
       task = TASK_SIGN;
     }
-    else if (!strcmp(argv[a], "-s"))
+    else if (!strcmp(argv[a], "--stats"))
       printStats = true;
     else if (!strcmp(argv[a], "-i") && a+1 < argc)
     {
@@ -290,7 +303,10 @@ int main(int argc, char** argv)
       timeLimit);
   }
   else
+  {
     assert(false);
+    error = CMR_ERROR_INPUT;
+  }
 
   switch (error)
   {

@@ -20,19 +20,25 @@ The command
 
     cmr-network IN-MAT [OPTION]...
 
-determines whether the matrix given in file `IN-MAT` is (co)network.
+determines whether the [matrix](\ref file-formats-matrix) given in file `IN-MAT` is (co)network.
 
 **Options**:
-  - `-i FORMAT`    Format of file `IN-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: dense.
+  - `-i FORMAT`    Format of file `IN-MAT`; default: [dense](\ref dense-matrix).
   - `-t`           Test for being conetwork; default: test for being network.
   - `-G OUT-GRAPH` Write a digraph to file `OUT-GRAPH`; default: skip computation.
   - `-T OUT-TREE`  Write a directed spanning tree to file `OUT-TREE`; default: skip computation.
   - `-D OUT-DOT`   Write a dot file `OUT-DOT` with the digraph and the directed spanning tree; default: skip computation.
-  - `-N NON-SUB`   Write a minimal non-network submatrix to file `NON-SUB`; default: skip computation.
-  - `-s`           Print statistics about the computation to stderr.
+  - `-N NON-SUB`   Write a minimal non-(co)network submatrix to file `NON-SUB`; default: skip computation.
 
-If `IN-MAT` is `-` then the matrix is read from stdin.
-If `OUT-GRAPH`, `OUT-TREE`, `OUT-DOT` or `NON-SUB` is `-` then the graph (resp. the tree, dot file or non-(co)network submatrix) is written to stdout.
+**Advanced options**:
+  - `--stats`            Print statistics about the computation to stderr.
+  - `--time-limit LIMIT` Allow at most `LIMIT` seconds for the computation.
+
+Formats for matrices: [dense](\ref dense-matrix), [sparse](\ref sparse-matrix)
+
+If `IN-MAT` is `-` then the [matrix](\ref file-formats-matrix) is read from stdin.
+
+If `OUT-GRAPH`, `OUT-TREE`, `OUT-DOT` or `NON-SUB` is `-` then the graph (resp. the tree, dot file or non-(co)network [submatrix](\ref file-formats-submatrix)) is written to stdout.
 
 ### Algorithm ###
 
@@ -42,8 +48,8 @@ The implemented recognition algorithm first tests the support matrix of \f$ M \f
 
 The corresponding functions in the library are
 
-  - CMRtestNetworkMatrix() tests a matrix for being network.
-  - CMRtestConetworkMatrix() tests a matrix for being conetwork.
+  - CMRnetworkTestMatrix() tests a matrix for being network.
+  - CMRnetworkTestTranspose() tests a matrix for being conetwork.
 
 and are defined in \ref network.h.
 
@@ -54,21 +60,27 @@ The command
 
     cmr-network -c IN-GRAPH OUT-MAT [OPTION]...
 
-computes a (co)network matrix corresponding to the digraph from file `IN-GRAPH` and writes it to `OUT-MAT`.
+computes a (co)network [matrix](\ref file-formats-matrix) corresponding to the digraph from file `IN-GRAPH` and writes it to `OUT-MAT`.
 
 **Options**:
-  - `-o FORMAT`    Format of file `OUT-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: dense.
+  - `-o FORMAT`    Format of file `OUT-MAT`; default: [dense](\ref dense-matrix).
   - `-t`           Return the transpose of the network matrix.
   - `-T IN-TREE`   Read a directed tree from file `IN-TREE`; default: use first specified arcs as tree edges.
-  - `-s`           Print statistics about the computation to stderr.
+
+**Advanced options**:
+  - `--stats`            Print statistics about the computation to stderr.
+  - `--time-limit LIMIT` Allow at most `LIMIT` seconds for the computation.
+
+Formats for matrices: [dense](\ref dense-matrix), [sparse](\ref sparse-matrix)
 
 If `IN-GRAPH` or `IN-TREE` is `-` then the digraph (resp. directed tree) is read from stdin.
-If `OUT-MAT` is `-` then the matrix is written to stdout.
+
+If `OUT-MAT` is `-` then the [matrix](\ref file-formats-matrix) is written to stdout.
 
 ### C Interface ###
 
 The corresponding function in the library is
 
-  - CMRcomputeNetworkMatrix() constructs a network matrix for a given digraph.
+  - CMRnetworkComputeMatrix() constructs a network matrix for a given digraph.
 
 and is defined in \ref network.h.

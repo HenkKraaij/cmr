@@ -6,7 +6,7 @@
  *
  * \author Matthias Walter and Klaus Truemper
  *
- * \brief Recognition of [regular matrices](\ref regular).
+ * \brief Recognition of [binary regular matrices](\ref binary_regular).
  */
 
 #ifdef __cplusplus
@@ -16,34 +16,16 @@ extern "C" {
 #include <cmr/env.h>
 #include <cmr/matrix.h>
 #include <cmr/matroid.h>
+#include <cmr/seymour.h>
 #include <cmr/graph.h>
 #include <cmr/series_parallel.h>
 #include <cmr/graphic.h>
 #include <cmr/network.h>
-#include <cmr/dec.h>
-
-typedef enum
-{
-  CMR_DEC_CONSTRUCT_NONE = 0,
-  CMR_DEC_CONSTRUCT_LEAVES = 1,
-  CMR_DEC_CONSTRUCT_ALL = 2,
-} CMR_DEC_CONSTRUCT;
 
 typedef struct
 {
-  bool directGraphicness;       /**< \brief Whether to use fast graphicness routines; default: \c true */
-  bool seriesParallel;          /**< \brief Whether to allow series-parallel operations in the decomposition tree;
-                                 **         default: \c true */
-  bool planarityCheck;          /**< \brief Whether minors identified as graphic should still be checked for
-                                 **         cographicness; default: \c false. */
-  bool completeTree;            /**< \brief Whether to compute a complete decomposition tree (even if already
-                                 **         non-regular; default: \c false. */
-  CMR_DEC_CONSTRUCT matrices;   /**< \brief Which matrices of the decomposition to construct; default:
-                                 **         \ref CMR_DEC_CONSTRUCT_NONE. */
-  CMR_DEC_CONSTRUCT transposes; /**< \brief Which transposed matrices of the decomposition to construct; default:
-                                 **         \ref CMR_DEC_CONSTRUCT_NONE. */
-  CMR_DEC_CONSTRUCT graphs;     /**< \brief Which (co)graphs to construct; default: \ref CMR_DEC_CONSTRUCT_NONE. */
-} CMR_REGULAR_PARAMETERS;
+  CMR_SEYMOUR_PARAMS seymour;
+} CMR_REGULAR_PARAMS;
 
 /**
  * \brief Initializes the default parameters for regularity testing.
@@ -52,8 +34,8 @@ typedef struct
  */
 
 CMR_EXPORT
-CMR_ERROR CMRparamsRegularInit(
-  CMR_REGULAR_PARAMETERS* params  /**< Pointer to parameters. */
+CMR_ERROR CMRregularParamsInit(
+  CMR_REGULAR_PARAMS* params  /**< Pointer to parameters. */
 );
 
 /**
@@ -62,19 +44,8 @@ CMR_ERROR CMRparamsRegularInit(
 
 typedef struct
 {
-  size_t totalCount;                  /**< Total number of invocations. */
-  double totalTime;                   /**< Total time of all invocations. */
-  CMR_SP_STATISTICS seriesParallel;   /**< Statistics for series-parallel algorithm. */
-  CMR_GRAPHIC_STATISTICS graphic;     /**< Statistics for direct (co)graphic checks. */
-  CMR_NETWORK_STATISTICS network;     /**< Statistics for direct (co)network checks. */
-  size_t sequenceExtensionCount;      /**< Number of extensions of sequences of nested minors. */
-  double sequenceExtensionTime;       /**< Time of extensions of sequences of nested minors. */
-  size_t sequenceGraphicCount;        /**< Number (co)graphicness tests applied to sequence of nested minors. */
-  double sequenceGraphicTime;         /**< Time of (co)graphicness tests applied to sequence of nested minors. */
-  size_t enumerationCount;            /**< Number of calls to enumeration algorithm for candidate 3-separations. */
-  double enumerationTime;             /**< Time of enumeration of candidate 3-separations. */
-  size_t enumerationCandidatesCount;  /**< Number of enumerated candidates for 3-separations. */
-} CMR_REGULAR_STATISTICS;
+  CMR_SEYMOUR_STATS seymour;  /**< Statistics for Seymour decomposition computations. */
+} CMR_REGULAR_STATS;
 
 
 /**
@@ -82,8 +53,8 @@ typedef struct
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsRegularInit(
-  CMR_REGULAR_STATISTICS* stats /**< Pointer to statistics. */
+CMR_ERROR CMRregularStatsInit(
+  CMR_REGULAR_STATS* stats /**< Pointer to statistics. */
 );
 
 /**
@@ -91,12 +62,12 @@ CMR_ERROR CMRstatsRegularInit(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRstatsRegularPrint(
-  FILE* stream,                   /**< File stream to print to. */
-  CMR_REGULAR_STATISTICS* stats,  /**< Pointer to statistics. */
-  const char* prefix              /**< Prefix string to prepend to each printed line (may be \c NULL). */
+CMR_ERROR CMRregularStatsPrint(
+  FILE* stream,             /**< File stream to print to. */
+  CMR_REGULAR_STATS* stats, /**< Pointer to statistics. */
+  const char* prefix        /**< Prefix string to prepend to each printed line (may be \c NULL). */
 );
-  
+
 /**
  * \brief Tests binary linear matroid for regularity.
  *
@@ -109,15 +80,47 @@ CMR_ERROR CMRstatsRegularPrint(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRtestBinaryRegular(
-  CMR* cmr,                       /**< \ref CMR environment. */
-  CMR_CHRMAT* matrix,             /**< Input matrix. */
-  bool *pisRegular,               /**< Pointer for storing whether \p matrix is regular. */
-  CMR_DEC** pdec,                 /**< Pointer for storing the decomposition tree (may be \c NULL). */
-  CMR_MINOR** pminor,             /**< Pointer for storing an \f$ F_7 \f$ or \f$ F_7^\star \f$ minor. */
-  CMR_REGULAR_PARAMETERS* params, /**< Parameters for the computation (may be \c NULL for defaults). */
-  CMR_REGULAR_STATISTICS* stats,  /**< Statistics for the computation (may be \c NULL). */
-  double timeLimit                /**< Time limit to impose. */
+CMR_ERROR CMRregularTest(
+  CMR* cmr,                   /**< \ref CMR environment. */
+  CMR_CHRMAT* matrix,         /**< Input matrix. */
+  bool *pisRegular,           /**< Pointer for storing whether \p matrix is regular. */
+  CMR_SEYMOUR_NODE** proot,   /**< Pointer for storing the Seymour decomposition tree (may be \c NULL). */
+  CMR_MINOR** pminor,         /**< Pointer for storing an \f$ F_7 \f$ or \f$ F_7^\star \f$ minor. */
+  CMR_REGULAR_PARAMS* params, /**< Parameters for the computation (may be \c NULL for defaults). */
+  CMR_REGULAR_STATS* stats,   /**< Statistics for the computation (may be \c NULL). */
+  double timeLimit            /**< Time limit to impose. */
+);
+
+/**
+ * \brief Completes a subtree of an existing decomposition tree.
+ *
+ * Replace the node's subtree by a new one even if it exists. Note that different parameters may yield a different
+ * subtree.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRregularCompleteDecomposition(
+  CMR* cmr,                   /**< \ref CMR environment. */
+  CMR_SEYMOUR_NODE* dec,      /**< Pointer to the decomposition node that is the root of the new subtree. */
+  CMR_REGULAR_PARAMS* params, /**< Parameters for the computation (may be \c NULL). */
+  CMR_REGULAR_STATS* stats,   /**< Statistics for the computation (may be \c NULL). */
+  double timeLimit            /**< Time limit to impose. */
+);
+
+/**
+ * \brief Refines a list of decomposition nodes.
+ *
+ * Replace the nodes' subtrees by new ones even if they exist.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRregularRefineDecomposition(
+  CMR* cmr,                   /**< \ref CMR environment. */
+  size_t numNodes,            /**< Number of nodes to refine. */
+  CMR_SEYMOUR_NODE** nodes,   /**< Array of decomposition nodes to refine. */
+  CMR_REGULAR_PARAMS* params, /**< Parameters for the computation (may be \c NULL). */
+  CMR_REGULAR_STATS* stats,   /**< Statistics for the computation (may be \c NULL). */
+  double timeLimit            /**< Time limit to impose. */
 );
 
 #ifdef __cplusplus

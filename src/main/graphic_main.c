@@ -4,6 +4,7 @@
 #include <time.h>
 #include <float.h>
 
+#include <cmr/env.h>
 #include <cmr/matrix.h>
 #include <cmr/graphic.h>
 #include <cmr/graph.h>
@@ -62,7 +63,7 @@ CMR_ERROR recognizeGraphic(
     return CMR_ERROR_INPUT;
   }
 
-  fprintf(stderr, "Read %lux%lu matrix with %lu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
+  fprintf(stderr, "Read %zux%zu matrix with %zu nonzeros in %f seconds.\n", matrix->numRows, matrix->numColumns,
     matrix->numNonzeros, (clock() - readClock) * 1.0 / CLOCKS_PER_SEC);
 
   /* Test for being binary first. */
@@ -71,11 +72,11 @@ CMR_ERROR recognizeGraphic(
   if (!CMRchrmatIsBinary(cmr, matrix, &submatrix))
   {
     CMR_CHRMAT* mat = NULL;
-    CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, submatrix, &mat) );
+    CMR_CALL( CMRchrmatSlice(cmr, matrix, submatrix, &mat) );
     assert(mat->numRows == 1);
     assert(mat->numColumns == 1);
     assert(mat->numNonzeros == 1);
-    fprintf(stderr, "Matrix is NOT %sgraphic since it is not binary: entry at row %ld, column %ld is %d.\n",
+    fprintf(stderr, "Matrix is NOT %sgraphic since it is not binary: entry at row %zu, column %zu is %d.\n",
       cographic ? "co" : "", submatrix->rows[0] + 1, submatrix->columns[0] + 1, mat->entryValues[0]);
 
     CMR_CALL( CMRchrmatFree(cmr, &mat) );
@@ -94,21 +95,21 @@ CMR_ERROR recognizeGraphic(
   CMR_GRAPH_EDGE* columnEdges = NULL;
   bool* edgesReversed = NULL;
   CMR_GRAPHIC_STATISTICS stats;
-  CMR_CALL( CMRstatsGraphicInit(&stats) );
+  CMR_CALL( CMRgraphicStatsInit(&stats) );
   if (cographic)
   {
-    CMR_CALL( CMRtestCographicMatrix(cmr, matrix, &isCoGraphic, &graph, &columnEdges, &rowEdges,
+    CMR_CALL( CMRgraphicTestTranspose(cmr, matrix, &isCoGraphic, &graph, &columnEdges, &rowEdges,
       outputSubmatrixFileName ? &submatrix : NULL, &stats, timeLimit) );
   }
   else
   {
-    CMR_CALL( CMRtestGraphicMatrix(cmr, matrix, &isCoGraphic, &graph, &rowEdges, &columnEdges,
+    CMR_CALL( CMRgraphicTestMatrix(cmr, matrix, &isCoGraphic, &graph, &rowEdges, &columnEdges,
       outputSubmatrixFileName ? &submatrix : NULL, &stats, timeLimit) );
   }
 
   fprintf(stderr, "Matrix %s%sgraphic.\n", isCoGraphic ? "IS " : "is NOT ", cographic ? "co" : "");
   if (printStats)
-    CMR_CALL( CMRstatsGraphicPrint(stderr, &stats, NULL) );
+    CMR_CALL( CMRgraphicStatsPrint(stderr, &stats, NULL) );
 
   if (isCoGraphic)
   {
@@ -132,7 +133,7 @@ CMR_ERROR recognizeGraphic(
             u = v;
             v = temp;
           }
-          fprintf(outputGraphFile, "%d %d c%ld\n", u, v, column+1);
+          fprintf(outputGraphFile, "%d %d c%zu\n", u, v, column+1);
         }
         for (size_t row = 0; row < matrix->numRows; ++row)
         {
@@ -145,7 +146,7 @@ CMR_ERROR recognizeGraphic(
             u = v;
             v = temp;
           }
-          fprintf(outputGraphFile, "%d %d r%ld\n", u, v, row+1);
+          fprintf(outputGraphFile, "%d %d r%zu\n", u, v, row+1);
         }
       }
       else
@@ -161,7 +162,7 @@ CMR_ERROR recognizeGraphic(
             u = v;
             v = temp;
           }
-          fprintf(outputGraphFile, "%d %d r%ld\n", u, v, row+1);
+          fprintf(outputGraphFile, "%d %d r%zu\n", u, v, row+1);
         }
         for (size_t column = 0; column < matrix->numColumns; ++column)
         {
@@ -174,7 +175,7 @@ CMR_ERROR recognizeGraphic(
             u = v;
             v = temp;
           }
-          fprintf(outputGraphFile, "%d %d c%ld\n", u, v, column+1);
+          fprintf(outputGraphFile, "%d %d c%zu\n", u, v, column+1);
         }
       }
 
@@ -347,12 +348,12 @@ CMR_ERROR computeGraphic(
 
   if (cographic)
   {
-    CMR_CALL( CMRcomputeGraphicMatrix(cmr, graph, NULL, &matrix, numForestEdges, forestEdges, numCoforestEdges,
+    CMR_CALL( CMRgraphicComputeMatrix(cmr, graph, NULL, &matrix, numForestEdges, forestEdges, numCoforestEdges,
       coforestEdges, &isCorrectForest) );
   }
   else
   {
-    CMR_CALL( CMRcomputeGraphicMatrix(cmr, graph, &matrix, NULL, numForestEdges, forestEdges, numCoforestEdges,
+    CMR_CALL( CMRgraphicComputeMatrix(cmr, graph, &matrix, NULL, numForestEdges, forestEdges, numCoforestEdges,
       coforestEdges, &isCorrectForest) );
   }
 
@@ -391,37 +392,51 @@ CMR_ERROR computeGraphic(
 }
 
 /**
- * \brief Prints the program's usage to stdout.
- * 
+ * \brief Prints the usage of the \p program to stdout.
+ *
  * \returns \c EXIT_FAILURE.
  */
 
 int printUsage(const char* program)
 {
   fputs("Usage:\n", stderr);
-  fprintf(stderr, "%s IN-MAT [OPTION]...\n\n", program);
-  fputs("  (1) determines whether the matrix given in file IN-MAT is (co)graphic.\n\n", stderr);
-  fprintf(stderr, "%s -c IN-GRAPH OUT-MAT [OPTION]...\n\n", program);
-  fputs("  (2) computes a (co)graphic matrix corresponding to the graph from file IN-GRAPH and writes it to OUT-MAT.\n\n\n",
+
+  fprintf(stderr, "%s IN-MAT [OPTION]...\n", program);
+  fputs("  (1) determines whether the matrix given in file IN-MAT is (co)graphic.\n", stderr);
+  fputs("\n", stderr);
+
+  fprintf(stderr, "%s -c IN-GRAPH OUT-MAT [OPTION]...\n", program);
+  fputs("  (2) computes a (co)graphic matrix corresponding to the graph from file IN-GRAPH and writes it to OUT-MAT.\n",
     stderr);
+  fputs("\n", stderr);
+
   fputs("Options specific to (1):\n", stderr);
-  fputs("  -i FORMAT    Format of file IN-MAT, among `dense' and `sparse'; default: dense.\n", stderr);
+  fputs("  -i FORMAT    Format of file IN-MAT; default: dense.\n", stderr);
   fputs("  -t           Test for being cographic; default: test for being graphic.\n", stderr);
   fputs("  -G OUT-GRAPH Write a graph to file OUT-GRAPH; default: skip computation.\n", stderr);
   fputs("  -T OUT-TREE  Write a spanning tree to file OUT-TREE; default: skip computation.\n", stderr);
-  fputs("  -D OUT-DOT   Write a dot file OUT-DOT with the graph and the spanning tree; default: skip computation.\n", stderr);
-  fputs("  -N NON-SUB   Write a minimal non-(co)graphic submatrix to file NON-SUB; default: skip computation.\n\n", stderr);
-  fputs("Options specific to (2):\n", stderr);
-  fputs("  -o FORMAT    Format of file OUT-MAT, among `dense' and `sparse'; default: dense.\n", stderr);
-  fputs("  -t           Return the transpose of the graphic matrix.\n", stderr);
-  fputs("  -T IN-TREE   Read a tree from file IN-TREE; default: use first specified edges as tree edges.\n\n", stderr);
-  fputs("Common options:\n", stderr);
-  fputs("  -s           Print statistics about the computation to stderr.\n\n", stderr);
-  fputs("Advanced options:\n", stderr);
-  fputs("  --time-limit LIMIT   Allow at most LIMIT seconds for the computation.\n\n", stderr);
-  fputs("If IN-MAT, IN-GRAPH or IN-TREE is `-' then the matrix (resp. the graph or tree) is read from stdin.\n", stderr);
-  fputs("If OUT-GRAPH, OUT-TREE, OUT-DOT or NON-SUB is `-' then the graph (resp. the tree, dot file or non-(co)graphic submatrix) is written to stdout.\n",
+  fputs("  -D OUT-DOT   Write a dot file OUT-DOT with the graph and the spanning tree; default: skip computation.\n",
     stderr);
+  fputs("  -N NON-SUB   Write a minimal non-(co)graphic submatrix to file NON-SUB; default: skip computation.\n",
+    stderr);
+  fputs("\n", stderr);
+
+  fputs("Options specific to (2):\n", stderr);
+  fputs("  -o FORMAT    Format of file OUT-MAT; default: dense.\n", stderr);
+  fputs("  -t           Return the transpose of the graphic matrix.\n", stderr);
+  fputs("  -T IN-TREE   Read a tree from file IN-TREE; default: use first specified edges as tree edges.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Advanced options:\n", stderr);
+  fputs("  --stats            Print statistics about the computation to stderr.\n", stderr);
+  fputs("  --time-limit LIMIT Allow at most LIMIT seconds for the computation.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Formats for matrices: dense, sparse\n", stderr);
+  fputs("If IN-MAT, IN-GRAPH or IN-TREE is `-' then the matrix (resp. the graph or tree) is read from stdin.\n",
+    stderr);
+  fputs("If OUT-GRAPH, OUT-TREE, OUT-DOT or NON-SUB is `-' then the graph (resp. the tree, dot file or non-(co)graphic"
+    " submatrix) is written to stdout.\n", stderr);
 
   return EXIT_FAILURE;
 }
@@ -451,7 +466,7 @@ int main(int argc, char** argv)
       task = TASK_COMPUTE;
     else if (!strcmp(argv[a], "-t"))
       transposed = true;
-    else if (!strcmp(argv[a], "-s"))
+    else if (!strcmp(argv[a], "--stats"))
       printStats = true;
     else if (!strcmp(argv[a], "-i") && a+1 < argc)
     {

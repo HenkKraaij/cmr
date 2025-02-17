@@ -15,13 +15,13 @@ TEST(SeriesParallel, Empty)
     ASSERT_CMR_CALL( stringToCharMatrix(cmr, &mat0x0, "0 0 "
     ) );
 
-    ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, mat0x0, NULL, reductions, &numReductions, NULL, NULL,
+    ASSERT_CMR_CALL( CMRspTestBinary(cmr, mat0x0, NULL, reductions, &numReductions, NULL, NULL,
       NULL, DBL_MAX) );
-    ASSERT_EQ( numReductions, 0 );
+    ASSERT_EQ( numReductions, 0UL );
 
-    ASSERT_CMR_CALL( CMRtestTernarySeriesParallel(cmr, mat0x0, NULL, reductions, &numReductions, NULL, NULL,
+    ASSERT_CMR_CALL( CMRspTestTernary(cmr, mat0x0, NULL, reductions, &numReductions, NULL, NULL,
       NULL, DBL_MAX) );
-    ASSERT_EQ( numReductions, 0 );
+    ASSERT_EQ( numReductions, 0UL );
 
     ASSERT_CMR_CALL( CMRchrmatFree(cmr, &mat0x0) );
   }
@@ -31,15 +31,15 @@ TEST(SeriesParallel, Empty)
     ASSERT_CMR_CALL( stringToCharMatrix(cmr, &mat2x0, "2 0 "
     ) );
 
-    ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, mat2x0, NULL, reductions, &numReductions, NULL, NULL,
+    ASSERT_CMR_CALL( CMRspTestBinary(cmr, mat2x0, NULL, reductions, &numReductions, NULL, NULL,
       NULL, DBL_MAX) );
-    ASSERT_EQ( numReductions, 2 );
+    ASSERT_EQ( numReductions, 2UL );
     ASSERT_EQ( reductions[0].element, -1 ); ASSERT_EQ( reductions[0].mate, 0 );
     ASSERT_EQ( reductions[1].element, -2 ); ASSERT_EQ( reductions[1].mate, 0 );
 
-    ASSERT_CMR_CALL( CMRtestTernarySeriesParallel(cmr, mat2x0, NULL, reductions, &numReductions, NULL, NULL,
+    ASSERT_CMR_CALL( CMRspTestTernary(cmr, mat2x0, NULL, reductions, &numReductions, NULL, NULL,
       NULL, DBL_MAX) );
-    ASSERT_EQ( numReductions, 2 );
+    ASSERT_EQ( numReductions, 2UL );
     ASSERT_EQ( reductions[0].element, -1 ); ASSERT_EQ( reductions[0].mate, 0 );
     ASSERT_EQ( reductions[1].element, -2 ); ASSERT_EQ( reductions[1].mate, 0 );
 
@@ -51,15 +51,15 @@ TEST(SeriesParallel, Empty)
     ASSERT_CMR_CALL( stringToCharMatrix(cmr, &mat0x2, "0 2 "
     ) );
 
-    ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, mat0x2, NULL, reductions, &numReductions, NULL, NULL,
+    ASSERT_CMR_CALL( CMRspTestBinary(cmr, mat0x2, NULL, reductions, &numReductions, NULL, NULL,
       NULL, DBL_MAX) );
-    ASSERT_EQ( numReductions, 2 );
+    ASSERT_EQ( numReductions, 2UL );
     ASSERT_EQ( reductions[0].element, 1 ); ASSERT_EQ( reductions[0].mate, 0 );
     ASSERT_EQ( reductions[1].element, 2 ); ASSERT_EQ( reductions[1].mate, 0 );
 
-    ASSERT_CMR_CALL( CMRtestTernarySeriesParallel(cmr, mat0x2, NULL, reductions, &numReductions, NULL, NULL,
+    ASSERT_CMR_CALL( CMRspTestTernary(cmr, mat0x2, NULL, reductions, &numReductions, NULL, NULL,
       NULL, DBL_MAX) );
-    ASSERT_EQ( numReductions, 2 );
+    ASSERT_EQ( numReductions, 2UL );
     ASSERT_EQ( reductions[0].element, 1 ); ASSERT_EQ( reductions[0].mate, 0 );
     ASSERT_EQ( reductions[1].element, 2 ); ASSERT_EQ( reductions[1].mate, 0 );
 
@@ -102,9 +102,9 @@ TEST(SeriesParallel, BinaryReduction)
   size_t numReductions;
   CMR_SUBMAT* submatrix = NULL;
 
-  ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, &submatrix, NULL, NULL,
+  ASSERT_CMR_CALL( CMRspTestBinary(cmr, matrix, NULL, reductions, &numReductions, &submatrix, NULL, NULL,
     DBL_MAX) );
-  ASSERT_EQ( numReductions, 20);
+  ASSERT_EQ( numReductions, 20UL);
   ASSERT_EQ( reductions[0].element, -6);  ASSERT_EQ( reductions[0].mate, -2);
   ASSERT_EQ( reductions[1].element, -7);  ASSERT_EQ( reductions[1].mate, 5);
   ASSERT_EQ( reductions[2].element, -8);  ASSERT_EQ( reductions[2].mate, 14);
@@ -126,8 +126,8 @@ TEST(SeriesParallel, BinaryReduction)
   ASSERT_EQ( reductions[18].element, 5);  ASSERT_EQ( reductions[18].mate, 4);
   ASSERT_EQ( reductions[19].element, -1); ASSERT_EQ( reductions[19].mate, -9);
 
-  ASSERT_EQ( submatrix->numRows, 10 );
-  ASSERT_EQ( submatrix->numColumns, 10 );
+  ASSERT_EQ( submatrix->numRows, 10UL );
+  ASSERT_EQ( submatrix->numColumns, 10UL );
 
   ASSERT_CMR_CALL( CMRsubmatFree(cmr, &submatrix) );
   ASSERT_CMR_CALL( CMRchrmatFree(cmr, &matrix) );
@@ -167,12 +167,12 @@ TEST(SeriesParallel, BinaryShortWheel)
   size_t numOperations;
   CMR_SUBMAT* wheelSubmatrix = NULL;
 
-  ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, matrix, NULL, operations, &numOperations, NULL,
+  ASSERT_CMR_CALL( CMRspTestBinary(cmr, matrix, NULL, operations, &numOperations, NULL,
     &wheelSubmatrix, NULL, DBL_MAX) );
-  ASSERT_EQ( numOperations, 8 );
+  ASSERT_EQ( numOperations, 8UL );
 
   CMR_CHRMAT* wheelMatrix = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
 
   CMRchrmatPrintDense(cmr, wheelMatrix, stdout, '0', true);
   
@@ -215,16 +215,16 @@ TEST(SeriesParallel, BinaryLongWheel)
   size_t numReductions;
   CMR_SUBMAT* wheelSubmatrix = NULL;
 
-  ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL, &wheelSubmatrix,
+  ASSERT_CMR_CALL( CMRspTestBinary(cmr, matrix, NULL, reductions, &numReductions, NULL, &wheelSubmatrix,
     NULL, DBL_MAX) );
-  ASSERT_EQ( numReductions, 8 );
+  ASSERT_EQ( numReductions, 8UL );
   for (size_t o = 0; o < numReductions; ++o)
   {
     printf("%s\n", CMRspReductionString(reductions[o], NULL));
   }
   
   CMR_CHRMAT* wheelMatrix = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
 
   CMRchrmatPrintDense(cmr, wheelMatrix, stdout, '0', true);
   
@@ -267,16 +267,16 @@ TEST(SeriesParallel, BinarySpecialWheel)
   size_t numReductions;
   CMR_SUBMAT* wheelSubmatrix = NULL;
 
-  ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL,
+  ASSERT_CMR_CALL( CMRspTestBinary(cmr, matrix, NULL, reductions, &numReductions, NULL,
     &wheelSubmatrix, NULL, DBL_MAX) );
-  ASSERT_EQ( numReductions, 8 );
+  ASSERT_EQ( numReductions, 8UL );
   for (size_t o = 0; o < numReductions; ++o)
   {
     printf("%s\n", CMRspReductionString(reductions[o], NULL));
   }
 
   CMR_CHRMAT* wheelMatrix = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
 
   CMRchrmatPrintDense(cmr, wheelMatrix, stdout, '0', true);
   
@@ -311,31 +311,25 @@ TEST(SeriesParallel, BinarySeparationFirstSearch)
   CMR_SUBMAT* wheelSubmatrix = NULL;
   CMR_SEPA* sepa = NULL;
 
-  ASSERT_CMR_CALL( CMRdecomposeBinarySeriesParallel(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions, NULL,
-    &wheelSubmatrix, &sepa, NULL, DBL_MAX) );
-  ASSERT_EQ( numReductions, 8 );
-  
-  ASSERT_EQ( sepa->numRows[0], 3 );
-  ASSERT_EQ( sepa->rows[0][0], 0 );
-  ASSERT_EQ( sepa->rows[0][1], 1 );
-  ASSERT_EQ( sepa->rows[0][2], 2 );
-  
-  ASSERT_EQ( sepa->numColumns[0], 3 );
-  ASSERT_EQ( sepa->columns[0][0], 1 );
-  ASSERT_EQ( sepa->columns[0][1], 2 );
-  ASSERT_EQ( sepa->columns[0][2], 3 );
 
-  ASSERT_EQ( sepa->numRows[1], 4 );
-  ASSERT_EQ( sepa->rows[1][0], 3 );
-  ASSERT_EQ( sepa->rows[1][1], 4 );
-  ASSERT_EQ( sepa->rows[1][2], 5 );
-  ASSERT_EQ( sepa->rows[1][3], 6 );
+  CMR_SUBMAT* reducedSubmatrix = NULL;
+  CMR_CHRMAT* reducedMatrix = NULL;
 
-  ASSERT_EQ( sepa->numColumns[1], 4 );
-  ASSERT_EQ( sepa->columns[1][0], 0 );
-  ASSERT_EQ( sepa->columns[1][1], 4 );
-  ASSERT_EQ( sepa->columns[1][2], 5 );
-  ASSERT_EQ( sepa->columns[1][3], 6 );
+  ASSERT_CMR_CALL( CMRspDecomposeBinary(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions,
+    &reducedSubmatrix, &wheelSubmatrix, &sepa, NULL, DBL_MAX) );
+  ASSERT_EQ( numReductions, 8UL );
+
+
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, reducedSubmatrix, &reducedMatrix) );
+
+  CMRchrmatPrintDense(cmr, matrix, stdout, '0', true);
+
+  CMRchrmatPrintDense(cmr, reducedMatrix, stdout, '0', true);
+
+  ASSERT_CMR_CALL( CMRchrmatFree(cmr, &reducedMatrix) );
+  ASSERT_CMR_CALL( CMRsubmatFree(cmr, &reducedSubmatrix) );
+
+  // TODO: CHECK flags.
 
   ASSERT_CMR_CALL( CMRsepaFree(cmr, &sepa) );
   ASSERT_CMR_CALL( CMRsubmatFree(cmr, &wheelSubmatrix) );
@@ -377,49 +371,12 @@ TEST(SeriesParallel, BinarySeparationSecondSearch)
   CMR_SUBMAT* wheelSubmatrix = NULL;
   CMR_SEPA* sepa = NULL;
 
-  ASSERT_CMR_CALL( CMRdecomposeBinarySeriesParallel(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions, NULL,
+  ASSERT_CMR_CALL( CMRspDecomposeBinary(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions, NULL,
     &wheelSubmatrix, &sepa, NULL, DBL_MAX) );
-  ASSERT_EQ( numReductions, 8 );
+  ASSERT_EQ( numReductions, 8UL );
 
-  ASSERT_EQ( sepa->numRows[0], 9 );
-  ASSERT_EQ( sepa->rows[0][0], 0 );
-  ASSERT_EQ( sepa->rows[0][1], 1 );
-  ASSERT_EQ( sepa->rows[0][2], 2 );
-  ASSERT_EQ( sepa->rows[0][3], 3 );
-  ASSERT_EQ( sepa->rows[0][4], 4 );
-  ASSERT_EQ( sepa->rows[0][5], 5 );
-  ASSERT_EQ( sepa->rows[0][6], 6 );
-  ASSERT_EQ( sepa->rows[0][7], 7 );
-  ASSERT_EQ( sepa->rows[0][8], 8 );
+  // TODO: CHECK flags.
 
-  ASSERT_EQ( sepa->numColumns[0], 8 );
-  ASSERT_EQ( sepa->columns[0][0], 8 );
-  ASSERT_EQ( sepa->columns[0][1], 9 );
-  ASSERT_EQ( sepa->columns[0][2], 10 );
-  ASSERT_EQ( sepa->columns[0][3], 11 );
-  ASSERT_EQ( sepa->columns[0][4], 12 );
-  ASSERT_EQ( sepa->columns[0][5], 13 );
-  ASSERT_EQ( sepa->columns[0][6], 14 );
-  ASSERT_EQ( sepa->columns[0][7], 15 );
-
-  ASSERT_EQ( sepa->numRows[1], 7 );
-  ASSERT_EQ( sepa->rows[1][0], 9 );
-  ASSERT_EQ( sepa->rows[1][1], 10 );
-  ASSERT_EQ( sepa->rows[1][2], 11 );
-  ASSERT_EQ( sepa->rows[1][3], 12 );
-  ASSERT_EQ( sepa->rows[1][4], 13 );
-  ASSERT_EQ( sepa->rows[1][5], 14 );
-  ASSERT_EQ( sepa->rows[1][6], 15 );
-
-  ASSERT_EQ( sepa->numColumns[1], 8 );
-  ASSERT_EQ( sepa->columns[1][0], 0 );
-  ASSERT_EQ( sepa->columns[1][1], 1 );
-  ASSERT_EQ( sepa->columns[1][2], 2 );
-  ASSERT_EQ( sepa->columns[1][3], 3 );
-  ASSERT_EQ( sepa->columns[1][4], 4 );
-  ASSERT_EQ( sepa->columns[1][5], 5 );
-  ASSERT_EQ( sepa->columns[1][6], 6 );
-  ASSERT_EQ( sepa->columns[1][7], 7 );
 
   ASSERT_CMR_CALL( CMRsepaFree(cmr, &sepa) );
   ASSERT_CMR_CALL( CMRsubmatFree(cmr, &wheelSubmatrix) );
@@ -460,16 +417,16 @@ TEST(SeriesParallel, BinaryWheelAfterSeparation)
   size_t numReductions;
   CMR_SUBMAT* wheelSubmatrix = NULL;
 
-  ASSERT_CMR_CALL( CMRtestBinarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL,
+  ASSERT_CMR_CALL( CMRspTestBinary(cmr, matrix, NULL, reductions, &numReductions, NULL,
     &wheelSubmatrix, NULL, DBL_MAX) );
-  ASSERT_EQ( numReductions, 8 );
+  ASSERT_EQ( numReductions, 8UL );
   for (size_t o = 0; o < numReductions; ++o)
   {
     printf("%s\n", CMRspReductionString(reductions[o], NULL));
   }
 
   CMR_CHRMAT* wheelMatrix = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, wheelSubmatrix, &wheelMatrix) );
 
   CMRchrmatPrintDense(cmr, wheelMatrix, stdout, '0', true);
   
@@ -502,9 +459,9 @@ TEST(SeriesParallel, TernarySeriesParallel)
   CMR_SP_REDUCTION reductions[20];
   size_t numReductions;
 
-  ASSERT_CMR_CALL( CMRtestTernarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL, NULL, NULL,
+  ASSERT_CMR_CALL( CMRspTestTernary(cmr, matrix, NULL, reductions, &numReductions, NULL, NULL, NULL,
     DBL_MAX) );
-  ASSERT_EQ( numReductions, 20 );
+  ASSERT_EQ( numReductions, 20U );
   for (size_t o = 0; o < numReductions; ++o)
   {
     printf("%s\n", CMRspReductionString(reductions[o], NULL));
@@ -538,17 +495,17 @@ TEST(SeriesParallel, TernaryNonbinary)
   size_t numReductions;
   CMR_SUBMAT* violatorSubmatrix = NULL;
 
-  ASSERT_CMR_CALL( CMRtestTernarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL,
+  ASSERT_CMR_CALL( CMRspTestTernary(cmr, matrix, NULL, reductions, &numReductions, NULL,
     &violatorSubmatrix, NULL, DBL_MAX) );
-  ASSERT_EQ( numReductions, 10 );
+  ASSERT_EQ( numReductions, 10UL );
   for (size_t o = 0; o < numReductions; ++o)
   {
     printf("%s\n", CMRspReductionString(reductions[o], NULL));
   }
 
   CMR_CHRMAT* violatorMatrix = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, violatorSubmatrix, &violatorMatrix) );
-  ASSERT_EQ( violatorMatrix->numNonzeros, 4 );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, violatorSubmatrix, &violatorMatrix) );
+  ASSERT_EQ( violatorMatrix->numNonzeros, 4UL );
   int det = violatorMatrix->entryValues[0] * violatorMatrix->entryValues[3]
     - violatorMatrix->entryValues[1] * violatorMatrix->entryValues[2];
   ASSERT_EQ( abs(det), 2 );
@@ -584,17 +541,17 @@ TEST(SeriesParallel, TernaryWheel)
   size_t numReductions;
   CMR_SUBMAT* violatorSubmatrix = NULL;
 
-  ASSERT_CMR_CALL( CMRtestTernarySeriesParallel(cmr, matrix, NULL, reductions, &numReductions, NULL,
+  ASSERT_CMR_CALL( CMRspTestTernary(cmr, matrix, NULL, reductions, &numReductions, NULL,
     &violatorSubmatrix, NULL, DBL_MAX) );
-  ASSERT_EQ( numReductions, 14 );
+  ASSERT_EQ( numReductions, 14UL );
   for (size_t o = 0; o < numReductions; ++o)
   {
     printf("%s\n", CMRspReductionString(reductions[o], NULL));
   }
 
   CMR_CHRMAT* violatorMatrix = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, violatorSubmatrix, &violatorMatrix) );
-  ASSERT_EQ( violatorMatrix->numNonzeros, 6 );
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, violatorSubmatrix, &violatorMatrix) );
+  ASSERT_EQ( violatorMatrix->numNonzeros, 6UL );
 
   ASSERT_CMR_CALL( CMRchrmatPrintDense(cmr, violatorMatrix, stdout, '0', true) );
 
@@ -611,26 +568,26 @@ TEST(SeriesParallel, TernarySeparation)
 
   CMR_CHRMAT* matrix = NULL;
   ASSERT_CMR_CALL( stringToCharMatrix(cmr, &matrix, "20 20 "
-    "1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "1 0 0 0 1 -1 1 -1 0 0 0 0 0 0 0 0 1 0 0 0 "
-    "0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 1 -1 1 -1 0 0 0 0 0 0 0 0 1 0 0 0 "
-    "0 0 0 0 1 -1 1 -1 0 0 0 0 1 0 0 0 0 1 0 0 "
-    "0 0 0 0 -1 1 -1 1 0 0 0 0 1 1 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 "
-    "0 0 0 0 1 1 1 0 1 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "1 0 0 0  0  0  0  0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "1 0 0 0  1 -1  1 -1 0 0 0 0 0 0 0 0 1 0 0 0 "
+    "0 0 1 1  0  0  0  0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 1  1  0  0  0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0  1 -1  1 -1 0 0 0 0 0 0 0 0 1 0 0 0 "
+    "0 0 0 0  1 -1  1 -1 0 0 0 0 1 0 0 0 0 1 0 0 "
+    "0 0 0 0 -1  1 -1  1 0 0 0 0 1 1 0 0 0 0 0 0 "
+    "0 0 0 0  0  0  0  0 0 0 0 0 1 1 0 0 0 0 0 0 "
+    "0 0 0 0  0  0  0  0 0 0 0 0 0 1 1 0 0 0 0 0 "
+    "0 0 0 0  0  0  0  0 0 0 0 0 0 0 1 1 0 0 0 0 "
+    "0 0 0 0  0  0  0  0 0 0 0 0 0 0 0 1 1 0 0 1 "
+    "0 0 0 0  0  0  0  0 0 0 0 0 0 0 0 0 0 0 1 1 "
+    "0 0 0 0  0  0  0  0 0 0 0 0 0 0 0 0 1 1 1 0 "
+    "0 0 0 0  1  1  1  0 1 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0  0  0  0  0 1 1 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0  0  0  0  0 0 0 1 1 0 0 0 0 0 0 0 0 "
+    "0 0 0 0  0  0  0  0 0 1 1 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0  1  0  1  0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0  0  1  1  1 0 0 0 1 0 0 0 0 0 0 0 0 "
+    "0 0 0 0  0  1  1  0 0 0 0 0 0 0 0 0 0 0 0 0 "
   ) );
 
   CMR_SP_REDUCTION reductions[20];
@@ -638,50 +595,12 @@ TEST(SeriesParallel, TernarySeparation)
   CMR_SUBMAT* violatorSubmatrix = NULL;
   CMR_SEPA* sepa = NULL;
 
-  ASSERT_CMR_CALL( CMRdecomposeTernarySeriesParallel(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions, NULL,
+  ASSERT_CMR_CALL( CMRspDecomposeTernary(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions, NULL,
     &violatorSubmatrix, &sepa, NULL, DBL_MAX) );
 
   ASSERT_FALSE( violatorSubmatrix );
 
-  ASSERT_EQ( sepa->numRows[0], 9 );
-  ASSERT_EQ( sepa->rows[0][0], 0 );
-  ASSERT_EQ( sepa->rows[0][1], 1 );
-  ASSERT_EQ( sepa->rows[0][2], 2 );
-  ASSERT_EQ( sepa->rows[0][3], 3 );
-  ASSERT_EQ( sepa->rows[0][4], 4 );
-  ASSERT_EQ( sepa->rows[0][5], 5 );
-  ASSERT_EQ( sepa->rows[0][6], 6 );
-  ASSERT_EQ( sepa->rows[0][7], 7 );
-  ASSERT_EQ( sepa->rows[0][8], 8 );
-
-  ASSERT_EQ( sepa->numColumns[0], 8 );
-  ASSERT_EQ( sepa->columns[0][0], 8 );
-  ASSERT_EQ( sepa->columns[0][1], 9 );
-  ASSERT_EQ( sepa->columns[0][2], 10 );
-  ASSERT_EQ( sepa->columns[0][3], 11 );
-  ASSERT_EQ( sepa->columns[0][4], 12 );
-  ASSERT_EQ( sepa->columns[0][5], 13 );
-  ASSERT_EQ( sepa->columns[0][6], 14 );
-  ASSERT_EQ( sepa->columns[0][7], 15 );
-
-  ASSERT_EQ( sepa->numRows[1], 7 );
-  ASSERT_EQ( sepa->rows[1][0], 9 );
-  ASSERT_EQ( sepa->rows[1][1], 10 );
-  ASSERT_EQ( sepa->rows[1][2], 11 );
-  ASSERT_EQ( sepa->rows[1][3], 12 );
-  ASSERT_EQ( sepa->rows[1][4], 13 );
-  ASSERT_EQ( sepa->rows[1][5], 14 );
-  ASSERT_EQ( sepa->rows[1][6], 15 );
-
-  ASSERT_EQ( sepa->numColumns[1], 8 );
-  ASSERT_EQ( sepa->columns[1][0], 0 );
-  ASSERT_EQ( sepa->columns[1][1], 1 );
-  ASSERT_EQ( sepa->columns[1][2], 2 );
-  ASSERT_EQ( sepa->columns[1][3], 3 );
-  ASSERT_EQ( sepa->columns[1][4], 4 );
-  ASSERT_EQ( sepa->columns[1][5], 5 );
-  ASSERT_EQ( sepa->columns[1][6], 6 );
-  ASSERT_EQ( sepa->columns[1][7], 7 );
+  // TODO: CHECK flags.
 
   ASSERT_CMR_CALL( CMRsepaFree(cmr, &sepa) );
   ASSERT_CMR_CALL( CMRsubmatFree(cmr, &violatorSubmatrix) );
@@ -697,45 +616,53 @@ TEST(SeriesParallel, TernaryBadSeparation)
 
   CMR_CHRMAT* matrix = NULL;
   ASSERT_CMR_CALL( stringToCharMatrix(cmr, &matrix, "20 20 "
-    "1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "1 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 "
-    "0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 1 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 "
+    "1 0 0 0 0  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "1 0 0 0 1  1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 "
+    "0 0 1 1 0  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 1 1  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 1  1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 "
     "0 0 0 0 1 -1 1 1 0 0 0 0 1 0 0 0 0 1 0 0 "
-    "0 0 0 0 1 1 1 1 0 0 0 0 1 1 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 "
-    "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 "
-    "0 0 0 0 1 1 1 0 1 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 1 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 "
-    "0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 1  1 1 1 0 0 0 0 1 1 0 0 0 0 0 0 "
+    "0 0 0 0 0  0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 "
+    "0 0 0 0 0  0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 "
+    "0 0 0 0 0  0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 "
+    "0 0 0 0 0  0 0 0 0 0 0 0 0 0 0 1 1 0 0 1 "
+    "0 0 0 0 0  0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 "
+    "0 0 0 0 0  0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 "
+    "0 0 0 0 1  1 1 0 1 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 0  0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 0  0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 0  0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 1  0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 0  1 1 1 0 0 0 1 0 0 0 0 0 0 0 0 "
+    "0 0 0 0 0  1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 "
   ) );
 
   CMR_SP_REDUCTION reductions[20];
   size_t numReductions;
+  CMR_SUBMAT* reducedSubmatrix = NULL;
   CMR_SUBMAT* violatorSubmatrix = NULL;
   CMR_SEPA* sepa = NULL;
 
-  ASSERT_CMR_CALL( CMRdecomposeTernarySeriesParallel(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions, NULL,
-    &violatorSubmatrix, &sepa, NULL, DBL_MAX) );
+  ASSERT_CMR_CALL( CMRspDecomposeTernary(cmr, matrix, NULL, reductions, SIZE_MAX, &numReductions,
+    &reducedSubmatrix, &violatorSubmatrix, &sepa, NULL, DBL_MAX) );
 
+  ASSERT_TRUE( violatorSubmatrix );
   ASSERT_FALSE( sepa );
+  CMR_CHRMAT* reducedMatrix = NULL;
   CMR_CHRMAT* violatorMatrix = NULL;
-  ASSERT_CMR_CALL( CMRchrmatZoomSubmat(cmr, matrix, violatorSubmatrix, &violatorMatrix) );
+
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, matrix, reducedSubmatrix, &reducedMatrix) );
+
+  ASSERT_CMR_CALL( CMRchrmatSlice(cmr, reducedMatrix, violatorSubmatrix, &violatorMatrix) );
 
   CMRchrmatPrintDense(cmr, violatorMatrix, stdout, '0', true);
 
   ASSERT_CMR_CALL( CMRchrmatFree(cmr, &violatorMatrix) );
+  ASSERT_CMR_CALL( CMRchrmatFree(cmr, &reducedMatrix) );
   ASSERT_CMR_CALL( CMRsepaFree(cmr, &sepa) );
   ASSERT_CMR_CALL( CMRsubmatFree(cmr, &violatorSubmatrix) );
+  ASSERT_CMR_CALL( CMRsubmatFree(cmr, &reducedSubmatrix) );
   ASSERT_CMR_CALL( CMRchrmatFree(cmr, &matrix) );
   ASSERT_CMR_CALL( CMRfreeEnvironment(&cmr) );
 }

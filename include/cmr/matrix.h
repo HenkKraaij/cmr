@@ -60,6 +60,21 @@ CMR_ERROR CMRsubmatCreate1x1(
 );
 
 /**
+ * \brief Creates a 2-by-2 submatrix.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRsubmatCreate2x2(
+  CMR* cmr,               /**< \ref CMR environment. */
+  size_t row1,            /**< First row */
+  size_t row2,            /**< Second row */
+  size_t column1,         /**< First column */
+  size_t column2,         /**< Second column */
+  CMR_SUBMAT** psubmatrix /**< Pointer to submatrix */
+);
+
+
+/**
  * \brief Frees a submatrix.
  */
 
@@ -79,16 +94,32 @@ CMR_ERROR CMRsubmatTranspose(
 );
 
 /**
- * \brief Returns the submatrix \p input as a submatrix of the \p reference submatrix.
+ * \brief Returns the submatrix \p input as a submatrix of the \p base submatrix.
  *
- * Assumes that \p input is a sub-submatrix of \p references, i.e., each row/column of \p input must also appear in
- * \p reference.
+ * Assumes that each row/column of \p input also appear in\p base. After the call \p *poutput will refer to the same
+ * rows/columns but from the viewpoint of \p base.
+ * Otherwise, \ref CMR_ERROR_INPUT is returned.
  */
 
 CMR_EXPORT
-CMR_ERROR CMRsubmatZoomSubmat(
+CMR_ERROR CMRsubmatSlice(
   CMR* cmr,               /**< \ref CMR environment. */
-  CMR_SUBMAT* reference,  /**< Reference submatrix. */
+  CMR_SUBMAT* base,       /**< Reference submatrix. */
+  CMR_SUBMAT* input,      /**< Input submatrix. */
+  CMR_SUBMAT** poutput    /**< Pointer for storing the output submatrix. */
+);
+
+/**
+ * \brief Returns the sub-submatrix \p input of \p base as a submatrix of its parent.
+ *
+ * The rows/columns of \p input are interpreted as those of \p base. After the call \p *poutput will refer to the saem
+ * rows/columns but as those of the parent.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRsubmatUnslice(
+  CMR* cmr,               /**< \ref CMR environment. */
+  CMR_SUBMAT* base,       /**< Reference submatrix. */
   CMR_SUBMAT* input,      /**< Input submatrix. */
   CMR_SUBMAT** poutput    /**< Pointer for storing the output submatrix. */
 );
@@ -100,7 +131,7 @@ CMR_ERROR CMRsubmatZoomSubmat(
  */
 
 CMR_EXPORT
-CMR_ERROR CMRsubmatWriteToStream(
+CMR_ERROR CMRsubmatPrint(
   CMR* cmr,               /**< \ref CMR environment. */
   CMR_SUBMAT* submatrix,  /**< Reference submatrix. */
   size_t numRows,         /**< Number of rows of original matrix. */
@@ -109,7 +140,7 @@ CMR_ERROR CMRsubmatWriteToStream(
 );
 
 /**
- * \brief Writes the submatrix \p submatrix to the file \fileName by means of lists of row and column indices.
+ * \brief Writes the submatrix \p submatrix to the file \p fileName by means of lists of row and column indices.
  *
  * In the file, row and column indices start at 1 while they start at 0 in \p submatrix.
  */
@@ -766,7 +797,7 @@ CMR_ERROR CMRchrmatCheckTranspose(
  *
  * \returns \c NULL if consistent. Otherwise, an explanation string is returned, which must free'd with \c free().
  * 
- * \see \ref CMRconsistencyAssert() for checking the returned string and aborting in case of inconsistency.
+ * \see \ref CMRdbgConsistencyAssert() for checking the returned string and aborting in case of inconsistency.
  */
 
 CMR_EXPORT
@@ -783,7 +814,7 @@ char* CMRdblmatConsistency(
  *
  * \returns \c NULL if consistent. Otherwise, an explanation string is returned, which must free'd with \c free().
  * 
- * \see \ref CMRconsistencyAssert() for checking the returned string and aborting in case of inconsistency.
+ * \see \ref CMRdbgConsistencyAssert() for checking the returned string and aborting in case of inconsistency.
  */
 
 CMR_EXPORT
@@ -800,7 +831,7 @@ char* CMRintmatConsistency(
  *
  * \returns \c NULL if consistent. Otherwise, an explanation string is returned, which must free'd with \c free().
  * 
- * \see \ref CMRconsistencyAssert() for checking the returned string and aborting in case of inconsistency.
+ * \see \ref CMRdbgConsistencyAssert() for checking the returned string and aborting in case of inconsistency.
  */
 
 CMR_EXPORT
@@ -809,11 +840,11 @@ char* CMRchrmatConsistency(
 );
 
 /**
- * \brief Creates a submatrix of a double matrix as an explicit matrix.
+ * \brief Slices a \p submatrix of a double matrix.
  */
 
 CMR_EXPORT
-CMR_ERROR CMRdblmatZoomSubmat(
+CMR_ERROR CMRdblmatSlice(
   CMR* cmr,               /**< \ref CMR environment. */
   CMR_DBLMAT* matrix,     /**< A matrix */
   CMR_SUBMAT* submatrix,  /**< A submatrix of \p matrix. */
@@ -821,11 +852,11 @@ CMR_ERROR CMRdblmatZoomSubmat(
 );
 
 /**
- * \brief Creates a submatrix of an int matrix as an explicit matrix.
+ * \brief Slices a \p submatrix of an int matrix.
  */
 
 CMR_EXPORT
-CMR_ERROR CMRintmatZoomSubmat(
+CMR_ERROR CMRintmatSlice(
   CMR* cmr,               /**< \ref CMR environment. */
   CMR_INTMAT* matrix,     /**< A matrix */
   CMR_SUBMAT* submatrix,  /**< A submatrix of \p matrix. */
@@ -833,11 +864,11 @@ CMR_ERROR CMRintmatZoomSubmat(
 );
 
 /**
- * \brief Creates a submatrix of a char matrix as an explicit matrix.
+ * \brief Slices a \p submatrix of a char matrix.
  */
 
 CMR_EXPORT
-CMR_ERROR CMRchrmatZoomSubmat(
+CMR_ERROR CMRchrmatSlice(
   CMR* cmr,               /**< \ref CMR environment. */
   CMR_CHRMAT* matrix,     /**< A matrix */
   CMR_SUBMAT* submatrix,  /**< A submatrix of \p matrix. */
@@ -961,6 +992,8 @@ CMR_ERROR CMRintmatSupport(
 
 /**
  * \brief Creates the (binary) support matrix of a char matrix as a char matrix.
+ *
+ * If \p *presult is equal to \p matrix then the matrix is modified.
  */
 
 CMR_EXPORT
@@ -1006,15 +1039,40 @@ CMR_ERROR CMRchrmatSignedSupport(
 );
 
 /**
+ * \brief Converts a char matrix to an int matrix.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRchrmatToInt(
+  CMR* cmr,             /**< \ref CMR environment. */
+  CMR_CHRMAT* matrix,   /**< Input matrix. */
+  CMR_INTMAT** presult  /**< Pointer for storing the output matrix. */
+);
+
+/**
  * \brief Converts an int matrix to a char matrix.
  *
- * \returns \ref CMR_ERROR_INPUT in case of overflow.
+ * \returns \ref CMR_ERROR_OVERFLOW in case of overflow.
  */
 
 CMR_EXPORT
 CMR_ERROR CMRintmatToChr(
   CMR* cmr,             /**< \ref CMR environment. */
   CMR_INTMAT* matrix,   /**< Input matrix. */
+  CMR_CHRMAT** presult  /**< Pointer for storing the output matrix. */
+);
+
+/**
+ * \brief Converts a double matrix to a char matrix.
+ *
+ * \returns \ref CMR_ERROR_OVERFLOW in case of overflow.
+ */
+
+CMR_EXPORT
+CMR_ERROR CMRdblmatToChr(
+  CMR* cmr,             /**< \ref CMR environment. */
+  CMR_DBLMAT* matrix,   /**< Input matrix. */
+  double epsilon,       /**< Expected accuracy. */
   CMR_CHRMAT** presult  /**< Pointer for storing the output matrix. */
 );
 
@@ -1060,7 +1118,6 @@ CMR_ERROR CMRchrmatFindEntry(
   size_t column,        /**< A column. */
   size_t* pentry        /**< Pointer for storing the entry at \p row, \p column, or \c SIZE_MAX if it is zero. */
 );
-
 
 #ifdef __cplusplus
 }

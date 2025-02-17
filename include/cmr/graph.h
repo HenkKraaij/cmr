@@ -255,6 +255,8 @@ bool CMRgraphNodesValid(
   CMR_GRAPH_NODE v   /**< Node. */
 )
 {
+  CMR_UNUSED(graph);
+
   assert(graph);
 
   return v >= 0;
@@ -308,6 +310,8 @@ bool CMRgraphIncValid(
   CMR_GRAPH_ITER i   /**< Iterator for edges incident to a node. */
 )
 {
+  CMR_UNUSED(graph);
+
   assert(graph);
 
   return i >= 0;
@@ -345,6 +349,8 @@ CMR_GRAPH_EDGE CMRgraphIncEdge(
   CMR_GRAPH_ITER i   /**< Iterator for edges incident to a node. */
 )
 {
+  CMR_UNUSED(graph);
+
   assert(graph);
 
   return i/2;
@@ -440,6 +446,8 @@ bool CMRgraphEdgesValid(
   CMR_GRAPH_ITER i   /**< Iterator for edges incident to a node. */
 )
 {
+  CMR_UNUSED(graph);
+
   assert(graph);
 
   return i >= 0;
@@ -455,6 +463,8 @@ CMR_GRAPH_EDGE CMRgraphEdgesEdge(
   CMR_GRAPH_ITER i   /**< Iterator for edges. */
 )
 {
+  CMR_UNUSED(graph);
+
   assert(graph);
 
   return i/2;
@@ -466,8 +476,8 @@ CMR_GRAPH_EDGE CMRgraphEdgesEdge(
 
 CMR_EXPORT
 CMR_ERROR CMRgraphPrint(
-  FILE* stream,   /**< Stream. */
-  CMR_GRAPH* graph /**< Graph structure. */
+  CMR_GRAPH* graph, /**< Graph structure. */
+  FILE* stream      /**< Stream. */
 );
 
 /**
@@ -476,20 +486,27 @@ CMR_ERROR CMRgraphPrint(
 
 CMR_EXPORT
 CMR_ERROR CMRgraphMergeNodes(
-  CMR* cmr,           /**< \ref CMR environment. */
-  CMR_GRAPH* graph,  /**< Graph. */
-  CMR_GRAPH_NODE u,  /**< First node. */
-  CMR_GRAPH_NODE v   /**< Second node. */
+  CMR* cmr,         /**< \ref CMR environment. */
+  CMR_GRAPH* graph, /**< Graph. */
+  CMR_GRAPH_NODE u, /**< First node. */
+  CMR_GRAPH_NODE v  /**< Second node. */
 );
 
 
 CMR_EXPORT
 CMR_ERROR CMRgraphCreateFromEdgeList(
-  CMR* cmr,                   /**< \ref CMR environment. */
-  CMR_GRAPH** pgraph,        /**< Pointer for storing the graph. */
+  CMR* cmr,                     /**< \ref CMR environment. */
+  CMR_GRAPH** pgraph,           /**< Pointer for storing the graph. */
   CMR_ELEMENT** pedgeElements,  /**< Pointer for storing element of each edge (may be \c NULL). */
-  char*** pnodeLabels,      /**< Pointer for storing string node labels (may be \c NULL). */
-  FILE* stream              /**< File stream to read from. */
+  char*** pnodeLabels,          /**< Pointer for storing string node labels (may be \c NULL). */
+  FILE* stream                  /**< File stream to read from. */
+);
+
+CMR_EXPORT
+CMR_ERROR CMRgraphCopy(
+  CMR* cmr,         /**< \ref CMR environment. */
+  CMR_GRAPH* graph, /**< Graph structure. */
+  CMR_GRAPH** pcopy /**< Pointer for storing the copied graph. */
 );
 
 /**@}*/

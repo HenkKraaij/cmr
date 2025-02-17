@@ -30,13 +30,27 @@ size_t randRange(size_t first, size_t beyond)
   return first + x / representatives;
 }
 
+/**
+ * \brief Prints the usage of the \p program to stdout.
+ *
+ * \returns \c EXIT_FAILURE.
+ */
+
 int printUsage(const char* program)
 {
-  printf("Usage: %s [OPTIONS] ROWS COLS p\n\n", program);
-  puts("Creates a random ROWS-by-COLS 0/1 matrix in which each entry is 1 with probability p.\n");
-  puts("Options:\n");
-  puts("  -o FORMAT  Format of output FILE; default: `dense'.");
-  puts("Formats for matrices: dense, sparse");
+  fputs("Usage:\n", stderr);
+
+  fprintf(stderr, "Usage: %s ROWS COLS p [OPTION]...\n", program);
+  fputs("  creates a random ROWS-by-COLS 0/1 matrix in which each entry is 1 with probability p and writes it to"
+    " stdout.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Options:\n", stderr);
+  fputs("  -o FORMAT  Format of output matrix; default: dense.\n", stderr);
+  fputs("\n", stderr);
+
+  fputs("Formats for matrices: dense, sparse\n", stderr);
+
   return EXIT_FAILURE;
 }
 
@@ -80,6 +94,9 @@ CMR_ERROR genMatrixRandom(
   matrix->numNonzeros = entry;
 
   /* Print matrix. */
+  fprintf(stderr, "Writing random matrix to stdout in %s format.\n",
+    outputFormat == FILEFORMAT_MATRIX_DENSE ? "dense" : "sparse");
+
   if (outputFormat == FILEFORMAT_MATRIX_DENSE)
     CMR_CALL( CMRchrmatPrintDense(cmr, matrix, stdout, '0', false) );
   else if (outputFormat == FILEFORMAT_MATRIX_SPARSE)
@@ -119,7 +136,7 @@ int main(int argc, char** argv)
         outputFormat = FILEFORMAT_MATRIX_SPARSE;
       else
       {
-        printf("Error: unknown output format <%s>.\n\n", argv[a+1]);
+        fprintf(stderr, "Error: unknown output format <%s>.\n\n", argv[a+1]);
         return printUsage(argv[0]);
       }
       ++a;
@@ -130,8 +147,8 @@ int main(int argc, char** argv)
       numRows = strtoull(argv[a], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of rows <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
     }
     else if (numColumns == SIZE_MAX)
@@ -140,8 +157,8 @@ int main(int argc, char** argv)
       numColumns = strtoull(argv[a], &p, 10);
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid number of columns <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
     }
     else if (!readProbability1)
@@ -151,40 +168,40 @@ int main(int argc, char** argv)
       readProbability1 = true;
       if (*p != '\0')
       {
-        printUsage(argv[0]);
-        return EXIT_FAILURE;
+        fprintf(stderr, "Error: invalid nonzero probability <%s>.\n\n", argv[a]);
+        return printUsage(argv[0]);
       }
     }
     else
     {
-      printf("Error: more than two size indicators specified: %ld %ld %s\n\n", numRows, numColumns, argv[a]);
+      fprintf(stderr, "Error: more than two size indicators specified: %zu %zu %s\n\n", numRows, numColumns, argv[a]);
       return printUsage(argv[0]);
     }
   }
 
   if (numRows == SIZE_MAX)
   {
-    puts("Error: no size indicator specified.\n");
+    fputs("Error: no size indicator specified.\n", stderr);
     return printUsage(argv[0]);
   }
   else if (numColumns == SIZE_MAX)
   {
-    puts("Error: only one size indicator specified.\n");
+    fputs("Error: only one size indicator specified.\n", stderr);
     return printUsage(argv[0]);
   }
   else if (numRows <= 0 || numColumns <= 0)
   {
-    puts("Error: matrix must have at least 1 row and 1 column.\n");
+    fputs("Error: matrix must have at least 1 row and 1 column.\n", stderr);
     return printUsage(argv[0]);
   }
   else if (!readProbability1)
   {
-    puts("Error: no probability specified.\n");
+    fputs("Error: no probability specified.\n", stderr);
     return printUsage(argv[0]);
   }
   else if (probability1 < 0.0 || readProbability1 > 1.0)
   {
-    puts("Error: probability must be in [0,1].\n");
+    fputs("Error: probability must be in [0,1].\n", stderr);
     return printUsage(argv[0]);
   }
   if (outputFormat == FILEFORMAT_UNDEFINED)
@@ -194,10 +211,10 @@ int main(int argc, char** argv)
   switch (error)
   {
   case CMR_ERROR_INPUT:
-    puts("Input error.");
+    fputs("Input error.\n", stderr);
     return EXIT_FAILURE;
   case CMR_ERROR_MEMORY:
-    puts("Memory error.");
+    fputs("Memory error.\n", stderr);
     return EXIT_FAILURE;
   default:
     return EXIT_SUCCESS;

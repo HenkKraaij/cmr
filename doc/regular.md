@@ -1,29 +1,41 @@
-# Regular Matroids # {#regular}
+# Binary Regular Matrices # {#binary_regular}
 
 A matrix \f$ M \in \{0,1\}^{m \times n} \f$ is **regular** if the binary matroid [represented](\ref matroids) by \f$ M \f$ is representable over *every* field.
 This is equivalent to requiring that the matroid is equal to the ternary matroid [represented](\ref matroids) by the [Camion-signed](\ref camion) version \f$ M' \f$ of \f$ M \f$, and thus equivalent to [total unimodularity](\ref tu) of \f$ M' \f$.
 
 
-## Recognizing Regular Matroids ##
+## Recognizing Binary Regular Matrices ##
 
 The command
 
     cmr-regular IN-MAT [OPTION...]
 
-determines whether the matrix given in file `IN-MAT` is regular.
+determines whether the [matrix](\ref file-formats-matrix) given in file `IN-MAT` is regular.
 
 **Options:**
-  - `-i FORMAT`    Format of file `IN-MAT`, among `dense` for \ref dense-matrix and `sparse` for \ref sparse-matrix; default: dense.
+  - `-i FORMAT`    Format of file `IN-MAT`; default: [dense](\ref dense-matrix).
   - `-D OUT-DEC`   Write a decomposition tree of the regular matroid to file `OUT-DEC`; default: skip computation.
   - `-N NON-MINOR` Write a minimal non-regular submatrix to file `NON-SUB`; default: skip computation.
-  - `-s`           Print statistics about the computation to stderr.
 
 **Advanced options:**
+  - `--stats`              Print statistics about the computation to stderr.
+  - `--time-limit LIMIT`   Allow at most `LIMIT` seconds for the computation.
+  - `--decompose STRATEGY` Strategy for decomposing among {`DP`, `YP`, `P3`, `D3`, `Y3`}; default: `D3`.
   - `--no-direct-graphic`  Check only 3-connected matrices for regularity.
   - `--no-series-parallel` Do not allow series-parallel operations in decomposition tree.
 
-If `IN-MAT` is `-` then the matrix is read from stdin.
-If `OUT-DEC` or `NON-SUB` is `-` then the decomposition tree (resp. the submatrix) is written to stdout.
+**Decomposition strategies:** 1st letter for distributed, 2nd for concentrated rank(s).
+  - `D` Delta-sum (distributed ranks)
+  - `Y` Y-sum (distributed ranks)
+  - `3` 3-sum (concentrated rank)
+  - `P` pivot (changes rank type)
+Note that D3 and Y3 do not produce pivots.
+
+Formats for matrices: [dense](\ref dense-matrix), [sparse](\ref sparse-matrix)
+
+If `IN-MAT` is `-` then the [matrix](\ref file-formats-matrix) is read from stdin.
+
+If `OUT-DEC` or `NON-SUB` is `-` then the decomposition tree (resp. the [submatrix](\ref file-formats-submatrix)) is written to stdout.
 
 ## Algorithm ##
 
@@ -49,6 +61,6 @@ Please cite the following paper in case the implementation contributed to your r
 
 The corresponding function in the library is
 
-  - CMRtestBinaryRegular() tests a binary matrix for regularity.
+  - CMRregularTest() tests a binary matrix for regularity.
 
 and is defined in \ref regular.h.

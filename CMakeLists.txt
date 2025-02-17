@@ -4,9 +4,11 @@ project(CMR
   VERSION 1.3.0
   LANGUAGES C CXX)
 
+set(CMAKE_C_STANDARD 99)
 option(SHARED "Build shared libraries" ON)
 set(BUILD_SHARED_LIBS ${SHARED})
 message(STATUS "Build shared libraries: " ${SHARED})
+option(GMP "Compile with GMP" ON)
 option(GENERATORS "Compile matrix generators" OFF)
 option(TESTS "Compile tests" ON)
 message(STATUS "Build tests: " ${TESTS})
@@ -26,57 +28,74 @@ else()
   message(STATUS "Generators: OFF")
 endif()
 
+if (MSVC)
+  add_compile_options(/W4)
+else()
+  add_compile_options(-Wall -Wextra -Wunused)
+endif()
+
+if(GMP)
+  find_package(GMP)
+  set(CMR_WITH_GMP ${GMP_FOUND})
+else()
+  set(CMR_WITH_GMP FALSE)
+endif()
+
 # Target for the CMR library.
 add_library(cmr
+  src/cmr/balanced.c
+  src/cmr/bipartite_graph.c
   src/cmr/camion.c
   src/cmr/ctu.c
-  src/cmr/dec.c
   src/cmr/densematrix.c
   src/cmr/element.c
   src/cmr/env.c
   src/cmr/hereditary_property.c
   src/cmr/matrix.c
-  src/cmr/one_sum.c
+  src/cmr/block_decomposition.c
   src/cmr/tu.c
-  src/cmr/determinant.cpp
-  src/cmr/ghouila_houri.cpp
   src/cmr/graph.c
   src/cmr/graphic.c
   src/cmr/hashtable.c
   src/cmr/heap.c
-  src/cmr/k_modular.c
+  src/cmr/equimodular.c
+  src/cmr/linear_algebra.c
   src/cmr/listmatrix.c
-  src/cmr/logger.cpp
-  src/cmr/matrix.cpp
   src/cmr/matroid.c
-  src/cmr/matroid_decomposition.cpp
-  src/cmr/matroid_graph.cpp
-  src/cmr/nested_minor_sequence.cpp
-  src/cmr/regular_nested_minor_sequence.c
   src/cmr/network.c
   src/cmr/regular.c
-  src/cmr/regular_enumerate.c
-  src/cmr/regular_graphic.c
-  src/cmr/regular_onesum.c
-  src/cmr/regular_r10.c
-  src/cmr/regular_series_parallel.c
-  src/cmr/separation.cpp
+  src/cmr/regularity_partition.c
+  src/cmr/regularity_graphic.c
+  src/cmr/regularity_nested_minor_sequence.c
+  src/cmr/regularity_onesum.c
+  src/cmr/regularity_threesum.c
+  src/cmr/regularity_r10.c
+  src/cmr/regularity_series_parallel.c
   src/cmr/separation.c
   src/cmr/series_parallel.c
+  src/cmr/seymour.c
   src/cmr/sort.c
-  src/cmr/interface.cpp
-  src/cmr/total_unimodularity.cpp
-  src/cmr/unimodularity.cpp
-  src/cmr/zero_plus_minus_one.cpp
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  target_compile_options(cmr PRIVATE -Wall -Wextra)
+  target_compile_options(cmr PRIVATE -Wall -Wextra -pedantic)
 endif()
+
+# Target for the cmr-balanced executable.
+add_executable(cmr_balanced
+  src/main/balanced_main.c)
+
+target_link_libraries(cmr_balanced
+  PRIVATE
+    CMR::cmr
+    m
+)
+set_target_properties(cmr_balanced PROPERTIES OUTPUT_NAME cmr-balanced)
 
 # Target for the cmr-camion executable.
 add_executable(cmr_camion
   src/main/camion_main.c) 
+
 target_link_libraries(cmr_camion
   PRIVATE
     CMR::cmr
@@ -114,15 +133,15 @@ target_link_libraries(cmr_graphic
 )
 set_target_properties(cmr_graphic PROPERTIES OUTPUT_NAME cmr-graphic)
 
-# Target for the cmr-k-modular.
-add_executable(cmr_k_modular
-  src/main/k_modular_main.c)
-target_link_libraries(cmr_k_modular
+# Target for the cmr-equimodular.
+add_executable(cmr_equimodular
+  src/main/equimodular_main.c)
+target_link_libraries(cmr_equimodular
   PRIVATE
     CMR::cmr
     m
 )
-set_target_properties(cmr_k_modular PROPERTIES OUTPUT_NAME cmr-k-modular)
+set_target_properties(cmr_equimodular PROPERTIES OUTPUT_NAME cmr-equimodular)
 
 # Target for the cmr-network executable.
 add_executable(cmr_network
@@ -175,6 +194,16 @@ target_link_libraries(cmr_k_ary
 set_target_properties(cmr_k_ary PROPERTIES OUTPUT_NAME cmr-k-ary)
 
 if(GENERATORS)
+  # Target for cmr-generate-wheel
+  add_executable(cmr_generate_wheel
+    src/gen/wheel_gen.c)
+  target_link_libraries(cmr_generate_wheel
+    PRIVATE
+      CMR::cmr
+      m
+  )
+  set_target_properties(cmr_generate_wheel PROPERTIES OUTPUT_NAME cmr-generate-wheel)
+
   # Target for cmr-generate-series-parallel
   add_executable(cmr_generate_series_parallel
     src/gen/series_parallel_gen.c)
@@ -225,8 +254,8 @@ if(GENERATORS)
   )
   set_target_properties(cmr_perturb_random PROPERTIES OUTPUT_NAME cmr-perturb-random)
 
-  set(GENERATOR_EXECUTABLES cmr_generate_series_parallel cmr_generate_graphic cmr_generate_network cmr_generate_random
-    cmr_perturb_random)
+  set(GENERATOR_EXECUTABLES cmr_generate_wheel cmr_generate_series_parallel cmr_generate_graphic cmr_generate_network
+    cmr_generate_random cmr_perturb_random)
 
   find_package(GUROBI)
   if(GUROBI_FOUND)
@@ -275,9 +304,6 @@ target_include_directories(cmr
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cmr/
 )
 
-target_compile_features(cmr PRIVATE cxx_auto_type)
-target_compile_options(cmr PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>)
-
 if(Threads_FOUND)
   target_link_libraries(cmr
     PRIVATE
@@ -285,14 +311,22 @@ if(Threads_FOUND)
   )
 endif()
 
+if(GMP_FOUND)
+  target_link_libraries(cmr
+    PRIVATE
+      ${GMP_LIBRARIES}
+  )
+endif()
+
 ### Installation ###
 include(GNUInstallDirs)
 
 install(TARGETS
+    cmr_balanced
     cmr_camion
     cmr_ctu
     cmr_graphic
-    cmr_k_modular
+    cmr_equimodular
     cmr_matrix
     cmr_network
     cmr_regular

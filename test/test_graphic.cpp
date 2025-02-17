@@ -19,7 +19,7 @@ void testBinaryGraphicMatrix(
   CMR_CHRMAT* transpose = NULL;
   ASSERT_CMR_CALL( CMRchrmatTranspose(cmr, matrix, &transpose) );
 
-  ASSERT_CMR_CALL( CMRtestCographicMatrix(cmr, transpose, &isGraphic, &graph, &basis, &cobasis, NULL, NULL, DBL_MAX) );
+  ASSERT_CMR_CALL( CMRgraphicTestTranspose(cmr, transpose, &isGraphic, &graph, &basis, &cobasis, NULL, NULL, DBL_MAX) );
 
   ASSERT_TRUE( isGraphic );
   ASSERT_TRUE( basis );
@@ -29,7 +29,7 @@ void testBinaryGraphicMatrix(
 
   CMR_CHRMAT* result = NULL;
   bool isCorrectBasis;
-  ASSERT_CMR_CALL( CMRcomputeGraphicMatrix(cmr, graph, &result, NULL, matrix->numRows, basis,
+  ASSERT_CMR_CALL( CMRgraphicComputeMatrix(cmr, graph, &result, NULL, matrix->numRows, basis,
     matrix->numColumns, cobasis, &isCorrectBasis) );
   ASSERT_TRUE( isCorrectBasis );
   ASSERT_TRUE( result );
@@ -40,18 +40,18 @@ void testBinaryGraphicMatrix(
     ASSERT_CMR_CALL( CMRchrmatPrintDense(cmr, matrix, stdout, ' ', true) );
   
     printf("Graph:\n");
-    ASSERT_CMR_CALL( CMRgraphPrint(stdout, graph) );
+    ASSERT_CMR_CALL( CMRgraphPrint(graph, stdout) );
 
     printf("Representation matrix:\n");
     ASSERT_CMR_CALL( CMRchrmatPrintDense(cmr, result, stdout, ' ', true) );
 
     printf("Basis:");
-    for (int r = 0; r < matrix->numRows; ++r)
+    for (size_t r = 0; r < matrix->numRows; ++r)
       printf(" %d", basis[r]);
     printf("\n");
 
     printf("Cobasis:");
-    for (int c = 0; c < matrix->numColumns; ++c)
+    for (size_t c = 0; c < matrix->numColumns; ++c)
       printf(" %d", cobasis[c]);
     printf("\n");
   }
@@ -73,7 +73,7 @@ void testBinaryNongraphicMatrix(
   bool isGraphic;
   CMR_CHRMAT* transpose = NULL;
   ASSERT_CMR_CALL( CMRchrmatTranspose(cmr, matrix, &transpose) );
-  ASSERT_CMR_CALL( CMRtestCographicMatrix(cmr, transpose, &isGraphic, NULL, NULL, NULL, NULL, NULL, DBL_MAX) );
+  ASSERT_CMR_CALL( CMRgraphicTestTranspose(cmr, transpose, &isGraphic, NULL, NULL, NULL, NULL, NULL, DBL_MAX) );
   ASSERT_FALSE( isGraphic );
   ASSERT_CMR_CALL( CMRchrmatFree(cmr, &transpose) );
 }
@@ -87,7 +87,7 @@ void testBinaryMatrix(
   bool isGraphic;
   CMR_CHRMAT* transpose = NULL;
   ASSERT_CMR_CALL( CMRchrmatTranspose(cmr, matrix, &transpose) );
-  ASSERT_CMR_CALL( CMRtestCographicMatrix(cmr, transpose, &isGraphic, &graph, NULL, NULL, NULL, NULL, DBL_MAX) );
+  ASSERT_CMR_CALL( CMRgraphicTestTranspose(cmr, transpose, &isGraphic, &graph, NULL, NULL, NULL, NULL, DBL_MAX) );
   ASSERT_CMR_CALL( CMRchrmatFree(cmr, &transpose) );
   if (graph)
     ASSERT_CMR_CALL( CMRgraphFree(cmr, &graph) );
@@ -929,7 +929,7 @@ TEST(Graphic, UpdateRandomGraph)
     }
 
     CMR_CHRMAT* A = NULL;
-    ASSERT_CMR_CALL( CMRcomputeGraphicMatrix(cmr, graph, &A, NULL, 0, NULL, 0, NULL, NULL) );
+    ASSERT_CMR_CALL( CMRgraphicComputeMatrix(cmr, graph, &A, NULL, 0, NULL, 0, NULL, NULL) );
 
     ASSERT_CMR_CALL( CMRgraphFree(cmr, &graph) );
 
@@ -993,7 +993,7 @@ TEST(Graphic, RepresentationMatrix)
   CMR_CHRMAT* check = NULL;
 
   /* Check binary representation matrix. */
-  ASSERT_CMR_CALL( CMRcomputeGraphicMatrix(cmr, graph, &matrix, NULL, 5, basis, 6, cobasis, &isCorrectBasis) );
+  ASSERT_CMR_CALL( CMRgraphicComputeMatrix(cmr, graph, &matrix, NULL, 5, basis, 6, cobasis, &isCorrectBasis) );
   ASSERT_TRUE( isCorrectBasis );
   stringToCharMatrix(cmr, &check, "5 6 "
     "1 1 0 0 0 0 "
@@ -1008,7 +1008,7 @@ TEST(Graphic, RepresentationMatrix)
 
   /* Check network matrix. */
   bool edgesReversed[] = { false, false, false, false, false, false, false, false, false, false, false };
-  ASSERT_CMR_CALL( CMRcomputeNetworkMatrix(cmr, graph, &matrix, NULL, edgesReversed, 5, basis, 6, cobasis,
+  ASSERT_CMR_CALL( CMRnetworkComputeMatrix(cmr, graph, &matrix, NULL, edgesReversed, 5, basis, 6, cobasis,
     &isCorrectBasis) );
   ASSERT_TRUE( isCorrectBasis );
   stringToCharMatrix(cmr, &check, "5 6 "
